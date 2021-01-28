@@ -1,9 +1,10 @@
-#define _GNU_SOURCE
+//#define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -33,16 +34,16 @@ static void source_start(pid_t* pid, int* fd, const char* cmd) {
     }
     close(p[1]);
     chk("fcntl failed", fcntl(p[0], F_SETFL, O_NONBLOCK) < 0);
-    chk("fcntl failed", fcntl(p[0], F_SETPIPE_SZ, 0x100000) < 0);
+    //chk("fcntl failed", fcntl(p[0], F_SETPIPE_SZ, 0x100000) < 0);
     *fd = p[0];
 }
 
 static void filter_end(pid_t* pid, int* wfd, int* rfd) {
-    close(*wfd);
+    if (*wfd >= -1)
+        close(*wfd);
     close(*rfd);
     chk("waitpid failed", waitpid(*pid, 0, 0) < 0);
     *pid = *wfd = *rfd = -1;
-    chk("write failed", write(STDOUT_FILENO, "\3", 1) != 1); // ETX
 }
 
 static void filter_start(pid_t* pid, int* wfd, int* rfd, const char* cmd, const char* filter) {
@@ -63,8 +64,7 @@ static void filter_start(pid_t* pid, int* wfd, int* rfd, const char* cmd, const 
     close(p[0]);
     close(q[1]);
     chk("fcntl failed", fcntl(p[1], F_SETFL, O_NONBLOCK) < 0 || fcntl(q[0], F_SETFL, O_NONBLOCK) < 0);
-    chk("fcntl failed", fcntl(p[1], F_SETPIPE_SZ, 0x100000) < 0 || fcntl(q[0], F_SETPIPE_SZ, 0x100000) < 0);
-    chk("write failed", write(STDOUT_FILENO, "\2", 1) != 1); // STX
+    //chk("fcntl failed", fcntl(p[1], F_SETPIPE_SZ, 0x100000) < 0 || fcntl(q[0], F_SETPIPE_SZ, 0x100000) < 0);
     *wfd = p[1];
     *rfd = q[0];
 }
@@ -74,6 +74,8 @@ int main(int argc, char* argv[]) {
     int filter_wfd = -1, filter_rfd = -1, source_fd = -1;
     char* data = 0;
     size_t data_size = 0, data_written = 0, data_avail = 0;
+    char* lines = 0;
+    size_t lines_size = 0, lines_avail = 0;
 
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <source> <filter>\n", argv[0]);
@@ -128,19 +130,56 @@ int main(int argc, char* argv[]) {
                 buf[len - 1] = 0;
                 filter_start(&filter_pid, &filter_wfd, &filter_rfd, argv[2], buf);
                 data_written = 0;
+                if (!lines_avail) {
+                    lines_avail = 0x100000;
+                    chk("malloc failed", !(lines = malloc(lines_avail)));
+                }
+                lines_size = 1;
+                *lines = 2; // STX
             }
         }
 
         // Read filtered data
         if (filter_rfd >= 0 && FD_ISSET(filter_rfd, &read_fds)) {
-            char buf[0x100000];
-            ssize_t len = read(filter_rfd, buf, sizeof (buf));
+            if (lines_size + 0x100000 > lines_avail) {
+                lines_avail = lines_avail ? 2 * lines_avail : 0x100000;
+                chk("realloc failed", !(lines = realloc(lines, lines_avail)));
+            }
+            ssize_t len = read(filter_rfd, lines + lines_size, lines_avail - lines_size - 1);
             if (len < 0)
                 chk("read from filter failed", errno != EAGAIN);
             else if (len)
-                chk("write to stdout failed", write(STDOUT_FILENO, buf, len) < 0); // TODO all
+                lines_size += len;
             else
                 filter_end(&filter_pid, &filter_wfd, &filter_rfd);
+
+            char* p = lines, *end = lines + lines_size;
+            size_t count = 0;
+            while (p < end && count < 1000) {
+                char* q = memchr(p, '\n', end - p);
+                if (!q)
+                    break;
+                p = q + 1;
+                ++count;
+            }
+
+            printf("COUNT %zu\n", count);
+
+            if (count == 1000 && filter_rfd >= 0) {
+                chk("kill failed", kill(filter_pid, SIGKILL) < 0);
+                filter_end(&filter_pid, &filter_wfd, &filter_rfd);
+            }
+
+            if (filter_rfd < 0) {
+                *p = 3; // ETX
+                end = p + 1;
+                p = lines;
+                while (p < end) {
+                    ssize_t n = write(STDOUT_FILENO, p, end - p);
+                    chk("write to stdout failed", n < 0);
+                    p += n;
+                }
+            }
         }
 
         // Read new data from source

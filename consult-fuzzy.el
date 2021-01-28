@@ -40,6 +40,9 @@
 ;; "rg --line-buffered -m 100 -i \"$0\""
 ;; "grep --line-buffered -m 100 -i -E \"$0\""
 ;; "fzy -e \"$0\" | head -n 100"
+
+;;(setq consult-fuzzy-filter-command "echo '\2'; fzy -e \"$0\" | head -n 100; echo '\3'")
+
 (defcustom consult-fuzzy-filter-command "fzf -f \"$0\" | head -n 100"
   "Filtering command."
   :type 'string)
@@ -104,11 +107,14 @@ CMD is the command argument list."
            :filter
            (lambda (_ out)
              (when-let (pos (seq-position out 3)) ;; ETX
+               ;;(consult--async-log "consult-fuzzy--async ETX\n")
                (when flush
                  (setq flush nil)
+                 ;;(consult--async-log "consult-fuzzy--async FLUSH1\n")
                  (funcall async 'flush))
                (setq out (concat (substring out 0 pos) (substring out (1+ pos)))))
              (when-let (pos (seq-position out 2)) ;; STX
+               ;;(consult--async-log "consult-fuzzy--async STX\n")
                (setq flush t rest "" out (substring out (1+ pos))))
              (let ((lines (split-string out "\n")))
                (if (not (cdr lines))
@@ -117,7 +123,9 @@ CMD is the command argument list."
                  (setq rest (car (last lines)))
                  (when flush
                    (setq flush nil)
+                   ;;(consult--async-log "consult-fuzzy--async FLUSH2\n")
                    (funcall async 'flush))
+                 ;;(consult--async-log "consult-fuzzy--async ADD %s\n" (length lines))
                  (funcall async (nbutlast lines)))))
            :sentinel
            (lambda (_ event)
@@ -125,45 +133,50 @@ CMD is the command argument list."
              (when (and (string-prefix-p "finished" event) (not (string= rest "")))
                (when flush
                  (setq flush nil)
+                 ;;(consult--async-log "consult-fuzzy--async FLUSH3\n")
                  (funcall async 'flush))
                (funcall async (list rest)))))))
         (_ (funcall async action))))))
 
-(defun consult--fuzzy-command (prompt cmd history dir initial)
-  "Run fuzzy CMD with PROMPT, HISTORY and INITIAL input in DIR."
+(defun consult--fuzzy-command (prompt cmd history initial)
+  "Run fuzzy CMD with PROMPT, HISTORY and INITIAL input."
   (consult-fuzzy--build)
-  (let* ((prompt-dir (consult--directory-prompt prompt dir))
-         (default-directory (cdr prompt-dir)))
-    (consult--read
-     (car prompt-dir)
-     (thread-first (consult--async-sink)
-       (consult--async-refresh-immediate)
-       (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
-       (consult-fuzzy--async (list (consult-fuzzy--executable) cmd
-                                    consult-fuzzy-filter-command))
-       (consult--async-split))
-     :sort nil
-     :require-match t
-     :initial (concat consult-async-default-split initial)
-     :add-history (concat consult-async-default-split (thing-at-point 'filename))
-     :category 'file
-     :history (list :input history))))
+  (consult--read
+   prompt
+   (thread-first (consult--async-sink)
+     (consult--async-refresh-immediate)
+     ;;(consult--async-refresh-timer)
+     (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
+     (consult-fuzzy--async (list (consult-fuzzy--executable) cmd
+                                 consult-fuzzy-filter-command))
+     ;;(consult--async-throttle)
+     (consult--async-split))
+   :sort nil
+   :require-match t
+   :initial (concat consult-async-default-split initial)
+   :add-history (concat consult-async-default-split (thing-at-point 'filename))
+   :category 'file
+   :history (list :input history)))
 
 (defun consult-fuzzy-find (&optional dir initial)
   "Fuzzy find in directory DIR with INITIAL input."
   (interactive "P")
-  (find-file (consult--fuzzy-command
-              "Fuzzy find"
-              consult-fuzzy-find-command
-              'consult-fuzzy--find-history dir initial)))
+  (let* ((prompt-dir (consult--directory-prompt "Fuzzy find" dir))
+         (default-directory (cdr prompt-dir)))
+    (find-file (consult--fuzzy-command
+                (car prompt-dir)
+                consult-fuzzy-find-command
+                'consult-fuzzy--find-history initial))))
 
 (defun consult-fuzzy-grep (&optional dir initial)
   "Fuzzy grep in directory DIR with INITIAL inut."
   (interactive "P")
-  (consult-fuzzy--goto (consult--fuzzy-command
-                        "Fuzzy grep"
-                        consult-fuzzy-grep-command
-                        'consult-fuzzy--grep-history dir initial)))
+  (let* ((prompt-dir (consult--directory-prompt "Fuzzy grep" dir))
+         (default-directory (cdr prompt-dir)))
+    (consult-fuzzy--goto (consult--fuzzy-command
+                          (car prompt-dir)
+                          consult-fuzzy-grep-command
+                          'consult-fuzzy--grep-history initial))))
 
 (defun consult-fuzzy--goto (location)
   "Goto grep LOCATION."
