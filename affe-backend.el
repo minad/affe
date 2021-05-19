@@ -28,16 +28,16 @@
   (setq affe-backend--tail (last (setcdr affe-backend--tail
                                     (split-string out "\n" 'omit-nulls)))))
 
-(defun affe-backend-start (cmd)
+(defun affe-backend-start (&rest cmd)
   "Start backend CMD."
-  (setq cmd (split-string-and-unquote cmd))
-  (make-process
-   :name (car cmd)
-   :noquery t
-   :command cmd
-   :connection-type 'pipe
-   :stderr "*stderr*"
-   :filter #'affe-backend--process-filter)
+  (run-at-time 0 nil
+               #'make-process
+               :name (car cmd)
+               :noquery t
+               :command cmd
+               :connection-type 'pipe
+               :stderr "*stderr*"
+               :filter #'affe-backend--process-filter)
   nil)
 
 (defun affe-backend-filter (limit &rest regexps)
@@ -49,10 +49,8 @@
     (catch 'done
       (all-completions "" (cdr affe-backend--head)
                        (lambda (cand)
-                         (when (= count 0)
-                           (process-send-string client "-affe-flush\n"))
-                         (process-send-string client (concat "-affe-match " cand "\n"))
-                         (process-send-string client "-affe-refresh\n")
+                         (process-send-string client (concat (and (= count 0) "-affe-flush\n")
+                                                             "-affe-match " cand "\n-affe-refresh\n"))
                          (when (>= (setq count (1+ count)) limit)
                            (throw 'done nil))
                          nil)))

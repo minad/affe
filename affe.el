@@ -68,20 +68,13 @@
         default-directory)
     "affe-backend.el")))
 
-(defun affe--send (name expr callback)
+(defun affe--send (name expr &optional filter)
   "Send EXPR to server NAME and call CALLBACK with result."
   (let* ((result)
          (proc (make-network-process
                 :name name
                 :noquery t
-                :filter
-                (lambda (_proc out)
-                  (dolist (line (split-string out "\n"))
-                    (cond
-                     ((string-prefix-p "-affe-match " line)
-                      (funcall callback (list (string-remove-prefix "-affe-match " line))))
-                     ((string-prefix-p "-affe-" line)
-                      (funcall callback (intern (string-remove-prefix "-affe-" line)))))))
+                :filter filter
                 :coding 'raw-text-unix
                 :family 'local
                 :service (expand-file-name name server-socket-dir))))
@@ -101,12 +94,19 @@
          (unless (or (equal "" action) (equal action last-input))
            (setq last-input action)
            (ignore-errors (delete-process proc))
-           (setq proc (affe--send name
-                                  `(affe-backend-filter ,affe-count ,@(funcall affe-regexp-function action))
-                                  async))))
+           (setq proc (affe--send
+                       name
+                       `(affe-backend-filter ,affe-count ,@(funcall affe-regexp-function action))
+                       (lambda (_proc out)
+                         (dolist (line (split-string out "\n"))
+                           (cond
+                            ((string-prefix-p "-affe-match " line)
+                             (funcall async (list (substring line 12))))
+                            ((string-match-p "-affe-\\(refresh\\|flush\\)" line)
+                             (funcall async (intern (substring line 6)))))))))))
         ('destroy
          (ignore-errors (delete-process proc))
-         (affe--send name '(kill-emacs) #'ignore)
+         (affe--send name '(kill-emacs))
          (funcall async 'destroy))
         ('setup
          (funcall async 'setup)
@@ -116,7 +116,7 @@
                              invocation-directory))
           nil nil nil "-Q" (concat "--daemon=" name)
           "-l" affe--backend-file)
-         (affe--send name `(and (run-at-time 0 nil (lambda () (affe-backend-start ,cmd))) nil) #'ignore))
+         (affe--send name `(affe-backend-start ,@(split-string-and-unquote cmd))))
         (_ (funcall async action))))))
 
 (defun affe--passthrough-all-completions (str table pred _point)
