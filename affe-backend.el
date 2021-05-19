@@ -14,6 +14,8 @@
 
 ;;; Code:
 
+(require 'server)
+
 (setq gc-cons-threshold 67108864
       gc-cons-percentage 0.5)
 
@@ -42,16 +44,22 @@
   "Filter backend output with REGEXPS."
   (let ((completion-regexp-list regexps)
         (completion-ignore-case t)
-        (count 0)
-        (result nil))
+        (client (car server-clients))
+        (count 0))
     (catch 'done
       (all-completions "" (cdr affe-backend--head)
                        (lambda (cand)
-                         (push cand result)
+                         (when (= count 0)
+                           (process-send-string client "-affe-flush\n"))
+                         (process-send-string client (concat "-affe-candidate " cand "\n"))
+                         (process-send-string client "-affe-refresh\n")
                          (when (>= (setq count (1+ count)) 20)
                            (throw 'done nil))
                          nil)))
-    (nreverse result)))
+    (when (= count 0)
+      (process-send-string client "-affe-flush\n")
+      (process-send-string client "-affe-refresh\n"))
+    nil))
 
 (provide 'affe-backend)
 ;;; affe-backend.el ends here

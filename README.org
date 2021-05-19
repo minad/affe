@@ -18,16 +18,3 @@ performed by ~all-completions~ for performance.
 
  - ~affe-grep~
  - ~affe-find~
-
-** Caveats
-
-The implementation has a few caveats, which are due to the limited ~emacsclient~ protocol
-and due to the way the filtering is performed in the backend.
-
-- For every filter request a new connect is established.
-- The backend filters the strings until it has found 20 candidates and returns them in bulk.
-  It would be better to return the candidates line by line as they are found.
-
-To get something production ready it may be necessary to use a more
-sophisticated IPC protocol. But I like the idea to use the existing Emacs
-server.

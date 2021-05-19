@@ -51,22 +51,14 @@
          (proc (make-network-process
                 :name name
                 :noquery t
-                :sentinel
-                (lambda (_proc _event)
-                  (funcall callback (and result (read result))))
                 :filter
                 (lambda (_proc out)
                   (dolist (line (split-string out "\n"))
                     (cond
-                     ((string-prefix-p "-print " line)
-                      (setq result (server-unquote-arg
-                                    (string-remove-prefix "-print " line))))
-                     ((string-prefix-p "-print-nonl " line)
-                      (setq result
-                            (concat
-                             result
-                             (server-unquote-arg
-                              (string-remove-prefix "-printnonl " line))))))))
+                     ((string-prefix-p "-affe-candidate " line)
+                      (funcall callback (list (string-remove-prefix "-affe-candidate " line))))
+                     ((string-prefix-p "-affe-" line)
+                      (funcall callback (intern (string-remove-prefix "-affe-" line)))))))
                 :coding 'raw-text-unix
                 :family 'local
                 :service (expand-file-name name server-socket-dir))))
@@ -84,14 +76,11 @@
       (pcase action
         ((pred stringp)
          (unless (or (equal "" action) (equal action last-input))
+           (setq last-input action)
            (ignore-errors (delete-process proc))
            (setq proc (affe--send name
                                   `(affe-backend-filter ,@(funcall affe-regexp-function action))
-                                  (lambda (result)
-                                    (setq last-input action)
-                                    (funcall async 'flush)
-                                    (funcall async result)
-                                    (funcall async 'refresh))))))
+                                  async))))
         ('destroy
          (ignore-errors (delete-process proc))
          (affe--send name '(kill-emacs) #'ignore)
