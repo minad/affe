@@ -7,7 +7,10 @@ starts another process generating lines (for example find or grep). These lines
 are filtered using the regexps submitted by the frontend. The filtering is
 performed by ~all-completions~ for performance.
 
-** Configure the fuzzing pattern compiler
+** Configure the fuzzy regexp compiler
+
+ The default regexp transformation is quite weak. You may want to use Orderless
+ instead.
 
  #+begin_src emacs-lisp
    (setq affe-regexp-function #'orderless-pattern-compiler

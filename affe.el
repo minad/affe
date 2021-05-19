@@ -18,10 +18,33 @@
 (require 'server)
 (eval-when-compile (require 'subr-x))
 
-(defvar affe-find-command "find -not ( -wholename */.* -prune ) -type f")
-(defvar affe-grep-command "rg --null --line-buffered --color=never --max-columns=1000 --no-heading --line-number -v \"^$\" .")
-(defvar affe-regexp-function #'affe-default-regexp)
-(defvar affe-highlight-function #'affe-default-highlight)
+(defgroup affe nil
+  "Asynchronous Fuzzy Finder for Emacs."
+  :group 'convenience
+  :prefix "affe-")
+
+(defcustom affe-count 50
+  "Number of matches the backend should return."
+  :type 'integer)
+
+(defcustom affe-find-command
+  "find -not ( -wholename */.* -prune ) -type f"
+  "Find file command."
+  :type 'string)
+
+(defcustom affe-grep-command
+  "rg --null --line-buffered --color=never --max-columns=1000 --no-heading --line-number -v \"^$\" ."
+  "Grep command."
+  :type 'string)
+
+(defcustom affe-regexp-function #'affe-default-regexp
+  "Transformation function from input string to list of regexps."
+  :type 'function)
+
+(defcustom affe-highlight-function #'affe-default-highlight
+  "Highlighting function taking the input string and the list of matches."
+  :type 'function)
+
 (defvar affe--grep-history nil)
 (defvar affe--find-history nil)
 
@@ -55,8 +78,8 @@
                 (lambda (_proc out)
                   (dolist (line (split-string out "\n"))
                     (cond
-                     ((string-prefix-p "-affe-candidate " line)
-                      (funcall callback (list (string-remove-prefix "-affe-candidate " line))))
+                     ((string-prefix-p "-affe-match " line)
+                      (funcall callback (list (string-remove-prefix "-affe-match " line))))
                      ((string-prefix-p "-affe-" line)
                       (funcall callback (intern (string-remove-prefix "-affe-" line)))))))
                 :coding 'raw-text-unix
@@ -79,7 +102,7 @@
            (setq last-input action)
            (ignore-errors (delete-process proc))
            (setq proc (affe--send name
-                                  `(affe-backend-filter ,@(funcall affe-regexp-function action))
+                                  `(affe-backend-filter ,affe-count ,@(funcall affe-regexp-function action))
                                   async))))
         ('destroy
          (ignore-errors (delete-process proc))

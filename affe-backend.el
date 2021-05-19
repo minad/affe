@@ -40,8 +40,8 @@
    :filter #'affe-backend--process-filter)
   nil)
 
-(defun affe-backend-filter (&rest regexps)
-  "Filter backend output with REGEXPS."
+(defun affe-backend-filter (limit &rest regexps)
+  "Filter backend lines with REGEXPS returning up to LIMIT matching lines."
   (let ((completion-regexp-list regexps)
         (completion-ignore-case t)
         (client (car server-clients))
@@ -51,9 +51,9 @@
                        (lambda (cand)
                          (when (= count 0)
                            (process-send-string client "-affe-flush\n"))
-                         (process-send-string client (concat "-affe-candidate " cand "\n"))
+                         (process-send-string client (concat "-affe-match " cand "\n"))
                          (process-send-string client "-affe-refresh\n")
-                         (when (>= (setq count (1+ count)) 20)
+                         (when (>= (setq count (1+ count)) limit)
                            (throw 'done nil))
                          nil)))
     (when (= count 0)
