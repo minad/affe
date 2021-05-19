@@ -1,0 +1,33 @@
+* affe.el - Asynchronous Fuzzy Finder for Emacs
+
+This package provides functionality similar to ~fzf~ but written in pure Elisp.
+The Consult frontend transforms the input string to a list of regexps. These
+regexps are passed to the backend via the ~emacsclient~ protocol. The backend
+starts another process generating lines (for example find or grep). These lines
+are filtered using the regexps submitted by the frontend. The filtering is
+performed by ~all-completions~ for performance.
+
+** Configure the fuzzing pattern compiler
+
+ #+begin_src emacs-lisp
+   (setq affe-regexp-function #'orderless-pattern-compiler
+         affe-highlight-function #'orderless-highlight-matches)
+ #+end_src
+
+** Available commands
+
+ - ~affe-grep~
+ - ~affe-find~
+
+** Caveats
+
+The implementation has a few caveats, which are due to the limited ~emacsclient~ protocol
+and due to the way the filtering is performed in the backend.
+
+- For every filter request a new connect is established.
+- The backend filters the strings until it has found 20 candidates and returns them in bulk.
+  It would be better to return the candidates line by line as they are found.
+
+To get something production ready it may be necessary to use a more
+sophisticated IPC protocol. But I like the idea to use the existing Emacs
+server.
