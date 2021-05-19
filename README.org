@@ -7,14 +7,18 @@ starts another process generating lines (for example find or grep). These lines
 are filtered using the regexps submitted by the frontend. The filtering is
 performed by ~all-completions~ for performance.
 
-** Configure the fuzzy regexp compiler
+** Configuration
 
  The default regexp transformation is quite weak. You may want to use Orderless
  instead.
 
  #+begin_src emacs-lisp
+   ;; Configure Orderless
    (setq affe-regexp-function #'orderless-pattern-compiler
          affe-highlight-function #'orderless-highlight-matches)
+
+   ;; Manual preview key for `affe-grep'
+   (setf (alist-get #'affe-grep consult-config) `(:preview-key ,(kbd "M-.")))
  #+end_src
 
 ** Available commands

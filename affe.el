@@ -165,6 +165,7 @@ ARGS are passed to `consult--read'."
    :require-match t
    :add-history (thing-at-point 'symbol)
    :lookup #'consult--lookup-cdr
+   :title #'consult--grep-title
    :state (consult--grep-state)))
 
 (defun affe-find (&optional dir initial)
