@@ -3,10 +3,10 @@
 This package provides an asynchronous fuzzy finder similar to the [[https://github.com/junegunn/fzf][fzf
 command-line fuzzy finder]], written in pure Elisp. A producer process is started
 in the background, e.g., ~find~, ~fd~ or ~ripgrep~. The output produced by this
-command is filted in an external asynchronous Emacs process. This ensures that
-the Emacs UI stays responsive in any case since the work is completely
-off-loaded to other processes. The results are presented in the minibuffer using
-[[https://github.com/minad/consult][Consult]], which allows to quickly select from the available items.
+command is filtered in an external asynchronous Emacs process. The Emacs UI
+stays responsive in any case since the work is completely off-loaded to other
+processes. The results are presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which
+allows to quickly select from the available items.
 
 The Affe frontend transforms the input string to a list of regular expressions
 by calling the ~affe-regexp-function~. The regular expressions are passed to the
@@ -24,7 +24,7 @@ consistent fuzzy filtering experience across all Emacs commands.
 ** Configuration
 
  The default regular expression transformation is limited. It is recommended to
- use Orderless instead. Furthermore a manual preview key should be set for
+ use [[https://github.com/oantolin/orderless][Orderless]] instead. Furthermore a manual preview key should be set for
  ~affe-grep~.
 
  #+begin_src emacs-lisp

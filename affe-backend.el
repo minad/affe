@@ -1,4 +1,4 @@
-;;; affe-backend.el --- AFFE Backend -*- lexical-binding: t -*-
+;;; affe-backend.el --- Affe backend -*- lexical-binding: t -*-
 
 ;; This file is not part of GNU Emacs.
 
@@ -17,16 +17,17 @@
 
 ;;; Commentary:
 
-;; AFFE Backend
+;; Affe backend
 
 ;;; Code:
 
 (require 'server)
 
+;; Increase GC limit in the background process
 (setq gc-cons-threshold 67108864
       gc-cons-percentage 0.5)
 
-(defvar affe-backend--head (list ""))
+(defvar affe-backend--head (list nil))
 (defvar affe-backend--tail affe-backend--head)
 
 (defun affe-backend--process-filter (_ out)
