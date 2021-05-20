@@ -105,6 +105,8 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
 (defun affe--async (async cmd)
   "Create asynchrous completion function from ASYNC with backend CMD."
   (let ((proc)
+        (backend (or (locate-library "affe-backend")
+                     (error "Could not locate the library `affe-backend.el'")))
         (last-input)
         (name (make-temp-name "affe-")))
     (lambda (action)
@@ -144,7 +146,7 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
            (expand-file-name invocation-name
                              invocation-directory))
           nil nil nil "-Q" (concat "--daemon=" name)
-          "-l" (locate-library "affe-backend"))
+          "-l" backend)
          (affe--send name `(affe-backend-start ,@(split-string-and-unquote cmd))))
         (_ (funcall async action))))))
 
