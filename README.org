@@ -71,8 +71,6 @@ amount of matching candidates, hopefully the most plausible ones. The frontend
 calls the ~affe-highlight-function~ on the returned matches, to highlight the
 input pattern.
 
-* Caveats
-
 Affe uses a more primitive matching technique than ~fzf~, which uses the
 [[https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm][Smith-Waterman algorithm]]. Affe does not perform any ranking or sorting; it
 matches the lines in the order returned by the producer process against a list
@@ -87,3 +85,10 @@ complexity will stay sufficiently linear such that the impact on the performance
 should be acceptable. However implementing a scoring-based sorting is probably
 not feasible since this would require heavier computations in Elisp. But maybe
 nativecomp Emacs is a game changer here?
+
+* Alternatives
+
+- [[https://github.com/bling/fzf.el][fzf.el]]: Runs the fzf command line program in an Emacs terminal
+- [[https://github.com/10sr/fuzzy-finder-el][fuzzy-finder.el]]: Similar to fzf.el
+- [[https://github.com/abo-abo/swiper][counsel-fzf]]: Ivy-specific, restarts find+fzf when updating the input pattern.
+- [[https://github.com/minad/consult][consult-grep/consult-find]]: Perform the filtering in the frontend.
