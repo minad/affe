@@ -75,14 +75,6 @@
   "Default highlighting function for CANDS."
   cands)
 
-(defconst affe--backend-file
-  (expand-file-name
-   (concat
-    (or (and load-file-name
-             (file-name-directory load-file-name))
-        default-directory)
-    "affe-backend.el")))
-
 (defun affe--send (name expr &optional filter)
   "Send EXPR to server NAME and call CALLBACK with result."
   (let* ((result)
@@ -130,7 +122,7 @@
            (expand-file-name invocation-name
                              invocation-directory))
           nil nil nil "-Q" (concat "--daemon=" name)
-          "-l" affe--backend-file)
+          "-l" (locate-library "affe-backend"))
          (affe--send name `(affe-backend-start ,@(split-string-and-unquote cmd))))
         (_ (funcall async action))))))
 
