@@ -28,7 +28,6 @@
 
 (defvar affe-backend--head (list ""))
 (defvar affe-backend--tail affe-backend--head)
-(defvar affe-backend--last nil)
 
 (defun affe-backend--process-filter (_ out)
   "Process filter function receiving output string OUT."
