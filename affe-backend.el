@@ -52,13 +52,13 @@
         (completion-ignore-case t)
         (client (car server-clients))
         (count 0))
-    (catch 'done
+    (catch 'affe--done
       (all-completions "" (cdr affe-backend--head)
                        (lambda (cand)
                          (process-send-string client (concat (and (= count 0) "-affe-flush\n")
                                                              "-affe-match " cand "\n"))
                          (when (>= (setq count (1+ count)) limit)
-                           (throw 'done nil))
+                           (throw 'affe--done nil))
                          nil)))
     (when (= count 0)
       (process-send-string client "-affe-flush\n"))

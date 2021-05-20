@@ -1,16 +1,31 @@
 * affe.el - Asynchronous Fuzzy Finder for Emacs
 
-This package provides functionality similar to ~fzf~ but written in pure Elisp.
-The Consult frontend transforms the input string to a list of regexps. These
-regexps are passed to the backend via the ~emacsclient~ protocol. The backend
-starts another process generating lines (for example find or grep). These lines
-are filtered using the regexps submitted by the frontend. The filtering is
-performed by ~all-completions~ for performance.
+This package provides an asynchronous fuzzy finder similar to the [[https://github.com/junegunn/fzf][fzf
+command-line fuzzy finder]], written in pure Elisp. A producer process is started
+in the background, e.g., ~find~, ~fd~ or ~ripgrep~. The output produced by this
+command is filted in an external asynchronous Emacs process. This ensures that
+the Emacs UI stays responsive in any case since the work is completely
+off-loaded to other processes. The results are presented in the minibuffer using
+[[https://github.com/minad/consult][Consult]], which allows to quickly select from the available items.
+
+The Affe frontend transforms the input string to a list of regular expressions
+by calling the ~affe-regexp-function~. The regular expressions are passed to the
+Affe backend via the ~emacsclient~ protocol. The backend controls the producer
+process, which generates lines of text. The lines are filtered using the regular
+expressions submitted by the frontend. For performance reasons, the filtering is
+performed by ~all-completions~.
+
+*NOTE*: Affe uses a more primitive matching technique than ~fzf~, which uses the
+[[https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm][Smith-Waterman algorithm]]. Affe does not perform any ranking or sorting; it only
+matches the lines against a list of regular expressions. On the upside, this
+allows plugging Affe together with the [[https://github.com/oantolin/orderless][Orderless]] completion style, which gives a
+consistent fuzzy filtering experience across all Emacs commands.
 
 ** Configuration
 
- The default regexp transformation is quite weak. You may want to use Orderless
- instead.
+ The default regular expression transformation is limited. It is recommended to
+ use Orderless instead. Furthermore a manual preview key should be set for
+ ~affe-grep~.
 
  #+begin_src emacs-lisp
    (use-package affe
@@ -26,5 +41,5 @@ performed by ~all-completions~ for performance.
 
 ** Available commands
 
- - ~affe-grep~
- - ~affe-find~
+ - ~affe-grep~: Filters the content of all text files in the current directory, similar to ~consult-grep~.
+ - ~affe-find~: Filters the file paths of all files in the current directory, similar to ~consult-find~.
