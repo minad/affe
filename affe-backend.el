@@ -49,14 +49,12 @@
     (catch 'done
       (all-completions "" (cdr affe-backend--head)
                        (lambda (cand)
-                         (process-send-string client (concat (and (= count 0) "-affe-flush\n")
-                                                             "-affe-match " cand "\n-affe-refresh\n"))
+                         (process-send-string client (concat (and (= count 0) "-affe-first\n")
+                                                             "-affe-match " cand "\n"))
                          (when (>= (setq count (1+ count)) limit)
                            (throw 'done nil))
                          nil)))
-    (when (= count 0)
-      (process-send-string client "-affe-flush\n")
-      (process-send-string client "-affe-refresh\n"))
+    (process-send-string client (if (= count 0) "-affe-failed\n" "-affe-finished\n"))
     nil))
 
 (provide 'affe-backend)
