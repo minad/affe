@@ -57,7 +57,7 @@
   :type 'function)
 
 (defcustom affe-highlight-function #'affe-default-highlight
-  "Highlighting function taking the input string and the list of matches."
+  "Highlighting function taking the list of regexps and the list of matches."
   :type 'function)
 
 (defvar affe--grep-history nil)
@@ -89,11 +89,11 @@
      (format "-eval %s\n" (server-quote-arg (prin1-to-string expr))))
     proc))
 
-(defun affe--passthrough-all-completions (str table pred _point)
+(defun affe--passthrough-all-completions (_str table pred _point)
   "Passthrough completion function.
 See `completion-all-completions' for the arguments STR, TABLE, PRED and POINT."
   (let ((completion-regexp-list))
-    (funcall affe-highlight-function str (all-completions "" table pred))))
+    (all-completions "" table pred)))
 
 (defun affe--passthrough-try-completion (_str table pred _point)
   "Passthrough completion function.
@@ -114,16 +114,19 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
          (unless (or (equal "" action) (equal action last-input))
            (setq last-input action)
            (ignore-errors (delete-process proc))
-           (setq proc (affe--send
-                       name
-                       `(affe-backend-filter ,affe-count ,@(funcall affe-regexp-function action))
-                       (lambda (_proc out)
-                         (let ((pos 0))
-                           (while (string-match "^-affe-\\([^ \n]+\\) ?\\(.*\\)\n" out pos)
-                             (setq pos (match-end 0))
-                             (pcase (match-string 1 out)
-                               ("match" (funcall async (list (match-string 2 out))))
-                               ("flush" (funcall async 'flush))))))))))
+           (let ((regexps (funcall affe-regexp-function action)))
+             (setq proc (affe--send
+                         name
+                         `(affe-backend-filter ,affe-count ,@regexps)
+                         (lambda (_proc out)
+                           (let ((pos 0))
+                             (while (string-match "^-affe-\\([^ \n]+\\) ?\\(.*\\)\n" out pos)
+                               (setq pos (match-end 0))
+                               (pcase (match-string 1 out)
+                                 ("match" (funcall async (funcall affe-highlight-function
+                                                                  regexps
+                                                                  (list (match-string 2 out)))))
+                                 ("flush" (funcall async 'flush)))))))))))
         ('destroy
          (ignore-errors (delete-process proc))
          (affe--send name '(kill-emacs))
