@@ -87,7 +87,7 @@
                 :service (expand-file-name name server-socket-dir))))
     (process-send-string
      proc
-     (format "-eval %s \n" (server-quote-arg (prin1-to-string expr))))
+     (format "-eval %s\n" (server-quote-arg (prin1-to-string expr))))
     proc))
 
 (defun affe--passthrough-all-completions (str table pred _point)
@@ -117,12 +117,12 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
                        name
                        `(affe-backend-filter ,affe-count ,@(funcall affe-regexp-function action))
                        (lambda (_proc out)
-                         (dolist (line (split-string out "\n"))
-                           (cond
-                            ((equal "-affe-flush" line)
-                             (funcall async 'flush))
-                            ((string-prefix-p "-affe-match " line)
-                             (funcall async (list (substring line 12)))))))))))
+                         (let ((pos 0))
+                           (while (string-match "^-affe-\\([^ \n]+\\) ?\\(.*\\)\n" out pos)
+                             (setq pos (match-end 0))
+                             (pcase (match-string 1 out)
+                               ("match" (funcall async (list (match-string 2 out))))
+                               ("flush" (funcall async 'flush))))))))))
         ('destroy
          (ignore-errors (delete-process proc))
          (affe--send name '(kill-emacs))
