@@ -47,6 +47,18 @@ use [[https://github.com/oantolin/orderless][Orderless]] instead. Furthermore a 
 - ~affe-grep~: Filters the content of all text files in the current directory, similar to ~consult-grep~.
 - ~affe-find~: Filters the file paths of all files in the current directory, similar to ~consult-find~.
 
+* Related packages
+
+Affe depends on Consult and works best with the Selectrum or Vertico completion
+UIs.
+
+- [[https://github.com/minad/consult][Consult]]: Many useful search and navigation commands (Dependency of Affe).
+- [[https://github.com/minad/marginalia][Marginalia]]: File annotations in the minibuffer.
+- [[https://github.com/oantolin/embark][Embark]]: Minibuffer actions on files.
+- [[https://github.com/oantolin/orderless][Orderless]]: Advanced completion style, can be plugged together with Affe.
+- [[https://github.com/raxod502/selectrum][Selectrum]], [[https://github.com/minad/vertico][Vertico]] or [[https://github.com/oantolin/icomplete-vertical][Icomplete-vertical]]: Vertical completion systems
+  (Icomplete-vertical is only needed for Emacs 27, built-in on Emacs 28)
+
 * Details
 
 The Affe frontend transforms the input string to a list of regular expressions
@@ -59,21 +71,19 @@ amount of matching candidates, hopefully the most plausible ones. The frontend
 calls the ~affe-highlight-function~ on the returned matches, to highlight the
 input pattern.
 
-*NOTE*: Affe uses a more primitive matching technique than ~fzf~, which uses the
-[[https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm][Smith-Waterman algorithm]]. Affe does not perform any ranking or sorting; it only
-matches the lines against a list of regular expressions. On the upside, this
-allows plugging Affe together with the [[https://github.com/oantolin/orderless][Orderless]] completion style, which can
-give a consistent fuzzy filtering experience across all Emacs commands,
-including synchronous and asynchronous commands.
+* Caveats
 
-* Related packages
+Affe uses a more primitive matching technique than ~fzf~, which uses the
+[[https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm][Smith-Waterman algorithm]]. Affe does not perform any ranking or sorting; it
+matches the lines in the order returned by the producer process against a list
+of regular expressions. On the upside, this allows plugging Affe together with
+the [[https://github.com/oantolin/orderless][Orderless]] completion style, which can give a consistent fuzzy filtering
+experience across all Emacs commands, including synchronous and asynchronous
+commands.
 
-Affe depends on Consult and works best with the Selectrum or Vertico completion
-UIs.
-
-- [[https://github.com/minad/consult][Consult]]: Many useful search and navigation commands (Dependency of Affe).
-- [[https://github.com/minad/marginalia][Marginalia]]: File annotations in the minibuffer.
-- [[https://github.com/oantolin/embark][Embark]]: Minibuffer actions on files.
-- [[https://github.com/oantolin/orderless][Orderless]]: Advanced completion style, can be plugged together with Affe.
-- [[https://github.com/raxod502/selectrum][Selectrum]], [[https://github.com/minad/vertico][Vertico]] or [[https://github.com/oantolin/icomplete-vertical][Icomplete-vertical]]: Vertical completion systems
-  (Icomplete-vertical is only needed for Emacs 27, built-in on Emacs 28)
+As possible enhancement of Affe, one could implement alphabetical and sorting by
+length in the backend. By using a bucket sorting technique the sorting
+complexity will stay sufficiently linear such that the impact on the performance
+should be acceptable. However implementing a scoring-based sorting is probably
+not feasible since this would require heavier computations in Elisp. But maybe
+nativecomp Emacs is a game changer here?
