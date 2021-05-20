@@ -85,10 +85,10 @@ commands.
 
 As possible enhancement of Affe, one could implement alphabetical and sorting by
 length in the backend. By using a bucket sorting technique the sorting
-complexity will stay sufficiently linear such that the impact on the performance
-should be acceptable. However implementing a scoring-based sorting is probably
-not feasible since this would require heavier computations in Elisp. But maybe
-nativecomp Emacs is a game changer here?
+complexity will stay sufficiently linear such that the performance impact should
+be acceptable. However implementing a scoring-based sorting is probably not
+feasible since this requires heavier computations in Elisp. But maybe nativecomp
+Emacs is a game changer here?
 
 * Alternatives
 
