@@ -85,7 +85,8 @@
 
 (defun affe--async (async cmd)
   "Create asynchrous completion function from ASYNC with backend CMD."
-  (let ((proc) (last-input) (indicator)
+  (let ((proc)
+        (last-input)
         (name (make-temp-name "affe-")))
     (lambda (action)
       (pcase action
@@ -93,30 +94,21 @@
          (unless (or (equal "" action) (equal action last-input))
            (setq last-input action)
            (ignore-errors (delete-process proc))
-           (overlay-put indicator 'display #("*" 0 1 (face consult-async-running)))
            (setq proc (affe--send
                        name
                        `(affe-backend-filter ,affe-count ,@(funcall affe-regexp-function action))
                        (lambda (_proc out)
                          (dolist (line (split-string out "\n"))
                            (cond
-                            ((equal "-affe-first" line)
-                             (funcall async 'flush))
-                            ((equal "-affe-failed" line)
-                             (funcall async 'flush)
-                             (overlay-put indicator 'display #("!" 0 1 (face consult-async-failed))))
-                            ((equal "-affe-finished" line)
-                             (overlay-put indicator 'display #(":" 0 1 (face consult-async-finished))))
                             ((string-prefix-p "-affe-match " line)
-                             (funcall async (list (substring line 12)))))))))))
+                             (funcall async (list (substring line 12))))
+                            ((string-match-p "-affe-\\(refresh\\|flush\\)" line)
+                             (funcall async (intern (substring line 6)))))))))))
         ('destroy
          (ignore-errors (delete-process proc))
          (affe--send name '(kill-emacs))
-         (delete-overlay indicator)
          (funcall async 'destroy))
         ('setup
-         (setq indicator (make-overlay (- (minibuffer-prompt-end) 2)
-                                       (- (minibuffer-prompt-end) 1)))
          (funcall async 'setup)
          (call-process
           (file-truename
@@ -164,7 +156,6 @@ ARGS are passed to `consult--read'."
   (affe--read
    "Fuzzy grep" dir
    (thread-first (consult--async-sink)
-     (consult--async-refresh-timer)
      (consult--async-transform consult--grep-matches)
      (affe--async affe-grep-command))
    :sort nil
@@ -184,7 +175,6 @@ ARGS are passed to `consult--read'."
    (affe--read
     "Fuzzy find" dir
     (thread-first (consult--async-sink)
-      (consult--async-refresh-timer)
       (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
       (affe--async affe-find-command))
     :history '(:input affe--find-history)
