@@ -75,33 +75,34 @@
   "Default highlighting function for CANDS."
   cands)
 
-(defun affe--send (name expr &optional callback)
+(defun affe--connect (name callback)
   "Send EXPR to server NAME and call CALLBACK with result."
-  (let* ((rest "")
-         (proc (make-network-process
-                :name name
-                :noquery t
-                :filter
-                (when callback
-                  (lambda (_ out)
-                    (let ((lines (split-string out "\n")))
-                      (if (not (cdr lines))
-                          (setq rest (concat rest (car lines)))
-                        (setcar lines (concat rest (car lines)))
-                        (setq rest (car (last lines)))
-                        (funcall callback (nbutlast lines))))))
-                :sentinel
-                (when callback
-                  (lambda (&rest _)
-                    (unless (equal rest "")
-                      (funcall callback (list rest)))))
-                :coding 'raw-text-unix
-                :family 'local
-                :service (expand-file-name name server-socket-dir))))
-    (process-send-string
-     proc
-     (format "-eval %s\n" (server-quote-arg (prin1-to-string expr))))
-    proc))
+  (let ((rest ""))
+    (make-network-process
+     :name name
+     :noquery t
+     :filter
+     (lambda (_ out)
+       (let ((lines (split-string out "\n")))
+         (if (not (cdr lines))
+             (setq rest (concat rest (car lines)))
+           (setcar lines (concat rest (car lines)))
+           (setq rest (car (last lines)))
+           (funcall callback (nbutlast lines)))))
+     :sentinel
+     (lambda (&rest _)
+       (unless (equal rest "")
+         (funcall callback (list rest))))
+     :coding 'raw-text-unix
+     :family 'local
+     :service (expand-file-name name server-socket-dir))))
+
+(defun affe--send (proc expr)
+  "Send EXPR to PROC."
+  (process-send-string
+   proc
+   (let ((print-escape-newlines t))
+     (concat (prin1-to-string expr) "\n"))))
 
 (defun affe--passthrough-all-completions (_str table pred _point)
   "Passthrough completion function.
@@ -118,16 +119,15 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
 (defun affe--async (async cmd)
   "Create asynchrous completion function from ASYNC with backend CMD."
   (let* ((proc) (last-regexps) (indicator)
-        (backend (or (locate-library "affe-backend")
-                     (error "Could not locate the library `affe-backend.el'")))
-        (name (make-temp-name "affe-"))
-        (callback
-         (lambda (lines)
-           (dolist (line lines)
-             (cond
-              ((equal "-affe-flush" line) (funcall async 'flush))
-              ((string-prefix-p "-affe-status " line)
-               (pcase-let ((`(,total ,done ,searching) (read (substring line 13))))
+         (backend (or (locate-library "affe-backend")
+                      (error "Could not locate the library `affe-backend.el'")))
+         (name (make-temp-name "affe-"))
+         (callback
+          (lambda (lines)
+            (dolist (line lines)
+              (pcase (read line)
+                ('flush (funcall async 'flush))
+                (`(status ,total ,done ,searching)
                  (overlay-put indicator 'display
                               (format " (total=%s%s)%s"
                                       (cond
@@ -137,25 +137,20 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
                                       (if done "" "+")
                                       (if searching (propertize ":" 'face
                                                                 `(:foreground ,(face-attribute
-                                                                                'error :foreground))) ":")))))
-              ((string-prefix-p "-affe-match " line)
-               (funcall async (funcall affe-highlight-function
-                                       last-regexps
-                                       (list (substring line 12))))))))))
+                                                                                'error :foreground))) ":"))))
+                (`(match . ,cand)
+                 (funcall async (funcall affe-highlight-function
+                                         last-regexps
+                                         (list cand)))))))))
     (lambda (action)
       (pcase action
         ((pred stringp)
          (let ((regexps (funcall affe-regexp-function action)))
            (unless (or (not regexps) (equal regexps last-regexps))
              (setq last-regexps regexps)
-             (ignore-errors (delete-process proc))
-             (setq proc (affe--send
-                         name
-                         `(affe-backend-filter ,affe-count ,@regexps)
-                         callback)))))
+             (affe--send proc `(filter ,affe-count ,@regexps)))))
         ('destroy
-         (ignore-errors (delete-process proc))
-         (affe--send name '(kill-emacs))
+         (affe--send proc 'exit)
          (funcall async 'destroy)
          (delete-overlay indicator))
         ('setup
@@ -178,9 +173,8 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
                              invocation-directory))
           nil nil nil "-Q" (concat "--daemon=" name)
           "-l" backend)
-         (affe--send name
-                     `(affe-backend-start ,@(split-string-and-unquote cmd))
-                     callback))
+         (setq proc (affe--connect name callback))
+         (affe--send proc `(start ,@(split-string-and-unquote cmd))))
         (_ (funcall async action))))))
 
 (defun affe--read (prompt dir &rest args)
