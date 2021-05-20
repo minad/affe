@@ -1,4 +1,12 @@
-* affe.el - Asynchronous Fuzzy Finder for Emacs
+#+title: affe.el - Asynchronous Fuzzy Finder for Emacs
+#+author: Daniel Mendler
+#+language: en
+#+export_file_name: affe.texi
+#+texinfo_dir_category: Emacs
+#+texinfo_dir_title: Affe: (affe).
+#+texinfo_dir_desc: Asynchronous Fuzzy Finder for Emacs.
+
+#+html: <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Lar_Gibbon_%2846946767992%29.jpg/1920px-Lar_Gibbon_%2846946767992%29.jpg" align="right" width="40%">
 
 This package provides an asynchronous fuzzy finder similar to the [[https://github.com/junegunn/fzf][fzf
 command-line fuzzy finder]], written in pure Elisp. A producer process is started
@@ -21,25 +29,25 @@ matches the lines against a list of regular expressions. On the upside, this
 allows plugging Affe together with the [[https://github.com/oantolin/orderless][Orderless]] completion style, which gives a
 consistent fuzzy filtering experience across all Emacs commands.
 
-** Configuration
+* Configuration
 
- The default regular expression transformation is limited. It is recommended to
- use [[https://github.com/oantolin/orderless][Orderless]] instead. Furthermore a manual preview key should be set for
- ~affe-grep~.
+The default regular expression transformation is limited. It is recommended to
+use [[https://github.com/oantolin/orderless][Orderless]] instead. Furthermore a manual preview key should be set for
+~affe-grep~.
 
- #+begin_src emacs-lisp
-   (use-package affe
-     :after orderless
-     :config
-     ;; Configure Orderless
-     (setq affe-regexp-function #'orderless-pattern-compiler
-           affe-highlight-function #'orderless-highlight-matches)
+#+begin_src emacs-lisp
+  (use-package affe
+    :after orderless
+    :config
+    ;; Configure Orderless
+    (setq affe-regexp-function #'orderless-pattern-compiler
+          affe-highlight-function #'orderless-highlight-matches)
 
-     ;; Manual preview key for `affe-grep'
-     (setf (alist-get #'affe-grep consult-config) `(:preview-key ,(kbd "M-."))))
- #+end_src
+    ;; Manual preview key for `affe-grep'
+    (setf (alist-get #'affe-grep consult-config) `(:preview-key ,(kbd "M-."))))
+#+end_src
 
-** Available commands
+* Available commands
 
- - ~affe-grep~: Filters the content of all text files in the current directory, similar to ~consult-grep~.
- - ~affe-find~: Filters the file paths of all files in the current directory, similar to ~consult-find~.
+- ~affe-grep~: Filters the content of all text files in the current directory, similar to ~consult-grep~.
+- ~affe-find~: Filters the file paths of all files in the current directory, similar to ~consult-find~.
