@@ -53,15 +53,18 @@ The Affe frontend transforms the input string to a list of regular expressions
 by calling the ~affe-regexp-function~. The regular expressions are passed to the
 Affe backend via the ~emacsclient~ protocol. The backend controls a producer
 process, which generates lines of text. The lines are filtered using the regular
-expressions submitted by the frontend. For performance reasons, ~all-completions~ is used
-for the filtering.
+expressions submitted by the frontend. For performance reasons,
+~all-completions~ is used for the filtering. The backend returns only a limited
+amount of matching candidates, hopefully the most plausible ones. The frontend
+calls the ~affe-highlight-function~ on the returned matches, to highlight the
+input pattern.
 
 *NOTE*: Affe uses a more primitive matching technique than ~fzf~, which uses the
 [[https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm][Smith-Waterman algorithm]]. Affe does not perform any ranking or sorting; it only
 matches the lines against a list of regular expressions. On the upside, this
 allows plugging Affe together with the [[https://github.com/oantolin/orderless][Orderless]] completion style, which can
 give a consistent fuzzy filtering experience across all Emacs commands,
-including synchronous and asynchronous command.
+including synchronous and asynchronous commands.
 
 * Related packages
 
