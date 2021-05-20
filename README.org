@@ -42,6 +42,10 @@ use [[https://github.com/oantolin/orderless][Orderless]] instead. Furthermore a 
     (setf (alist-get #'affe-grep consult-config) `(:preview-key ,(kbd "M-."))))
 #+end_src
 
+Affe requires the ~find~ and ~ripgrep~ command line programs to be available.
+The producer processes can be customized by adjusting the variables
+~affe-find-command~ and ~affe-grep-command~.
+
 * Available commands
 
 - ~affe-grep~: Filters the content of all text files in the current directory, similar to ~consult-grep~.
