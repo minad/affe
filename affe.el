@@ -8,6 +8,21 @@
 ;; Package-Requires: ((emacs "27.1") (consult "0.7"))
 ;; Homepage: https://github.com/minad/affe
 
+;; This file is not part of GNU Emacs.
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 ;;; Commentary:
 
 ;; Asynchronous Fuzzy Finder for Emacs
@@ -150,6 +165,7 @@ ARGS are passed to `consult--read'."
                       completion-category-overrides nil))
       (apply #'consult--read (append args (list :prompt (car prompt-dir)))))))
 
+;;;###autoload
 (defun affe-grep (&optional dir initial)
   "Fuzzy grep in DIR with optional INITIAL input."
   (interactive)
@@ -168,6 +184,7 @@ ARGS are passed to `consult--read'."
    :title #'consult--grep-title
    :state (consult--grep-state)))
 
+;;;###autoload
 (defun affe-find (&optional dir initial)
   "Fuzzy find in DIR with optional INITIAL input."
   (interactive)
