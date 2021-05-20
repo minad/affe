@@ -16,7 +16,15 @@ always stays responsive since the work is completely off-loaded to other
 processes. The results are presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which
 allows to quickly select from the available items.
 
-* Configuration
+* Installation and Configuration
+
+The package is not yet available on MELPA or ELPA. Therefore installation must
+be done manually using your package manager of choice. For package.el,
+installation requires these steps:
+
+1. Clone the repository
+2. Open a dired buffer =~/affe/=
+3. =M-x package-install-from-buffer RET=
 
 The default regular expression transformation is limited. It is recommended to
 use [[https://github.com/oantolin/orderless][Orderless]] instead. Furthermore a manual preview key should be set for
