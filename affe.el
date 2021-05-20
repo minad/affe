@@ -165,7 +165,7 @@ ARGS are passed to `consult--read'."
   (affe--read
    "Fuzzy grep" dir
    (thread-first (consult--async-sink)
-     (consult--async-refresh-timer 0.1)
+     (consult--async-refresh-timer 0.05)
      (consult--async-transform consult--grep-matches)
      (affe--async affe-grep-command))
    :initial initial
@@ -184,7 +184,7 @@ ARGS are passed to `consult--read'."
    (affe--read
     "Fuzzy find" dir
     (thread-first (consult--async-sink)
-      (consult--async-refresh-timer 0.1)
+      (consult--async-refresh-timer 0.05)
       (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
       (affe--async affe-find-command))
     :history '(:input affe--find-history)
