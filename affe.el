@@ -161,7 +161,7 @@ ARGS are passed to `consult--read'."
 ;;;###autoload
 (defun affe-grep (&optional dir initial)
   "Fuzzy grep in DIR with optional INITIAL input."
-  (interactive)
+  (interactive "P")
   (affe--read
    "Fuzzy grep" dir
    (thread-first (consult--async-sink)
@@ -179,7 +179,7 @@ ARGS are passed to `consult--read'."
 ;;;###autoload
 (defun affe-find (&optional dir initial)
   "Fuzzy find in DIR with optional INITIAL input."
-  (interactive)
+  (interactive "P")
   (find-file
    (affe--read
     "Fuzzy find" dir
