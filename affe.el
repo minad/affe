@@ -90,6 +90,18 @@
      (format "-eval %s \n" (server-quote-arg (prin1-to-string expr))))
     proc))
 
+(defun affe--passthrough-all-completions (str table pred _point)
+  "Passthrough completion function.
+See `completion-all-completions' for the arguments STR, TABLE, PRED and POINT."
+  (let ((completion-regexp-list))
+    (funcall affe-highlight-function str (all-completions "" table pred))))
+
+(defun affe--passthrough-try-completion (_str table pred _point)
+  "Passthrough completion function.
+See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
+  (let ((completion-regexp-list))
+    (and (try-completion "" table pred) t)))
+
 (defun affe--async (async cmd)
   "Create asynchrous completion function from ASYNC with backend CMD."
   (let ((proc)
@@ -117,6 +129,16 @@
          (funcall async 'destroy))
         ('setup
          (funcall async 'setup)
+         (setq-local completion-styles-alist
+                     (cons
+                      (list 'affe--passthrough
+                            #'affe--passthrough-try-completion
+                            #'affe--passthrough-all-completions
+                            "")
+                      completion-styles-alist)
+                     completion-styles '(affe--passthrough)
+                     completion-category-defaults nil
+                     completion-category-overrides nil)
          (call-process
           (file-truename
            (expand-file-name invocation-name
@@ -126,36 +148,15 @@
          (affe--send name `(affe-backend-start ,@(split-string-and-unquote cmd))))
         (_ (funcall async action))))))
 
-(defun affe--passthrough-all-completions (str table pred _point)
-  "Passthrough completion function.
-See `completion-all-completions' for the arguments STR, TABLE, PRED and POINT."
-  (let ((completion-regexp-list))
-    (funcall affe-highlight-function str (all-completions "" table pred))))
-
-(defun affe--passthrough-try-completion (_str table pred _point)
-  "Passthrough completion function.
-See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
-  (let ((completion-regexp-list))
-    (and (try-completion "" table pred) t)))
-
 (defun affe--read (prompt dir &rest args)
   "Asynchronous selection function with PROMPT in DIR.
 ARGS are passed to `consult--read'."
   (let* ((prompt-dir (consult--directory-prompt prompt dir))
          (default-directory (cdr prompt-dir)))
-    (consult--minibuffer-with-setup-hook
-        (lambda ()
-          (setq-local completion-styles-alist
-                      (cons
-                       (list 'affe--passthrough
-                             #'affe--passthrough-try-completion
-                             #'affe--passthrough-all-completions
-                             "")
-                       completion-styles-alist)
-                      completion-styles '(affe--passthrough)
-                      completion-category-defaults nil
-                      completion-category-overrides nil))
-      (apply #'consult--read (append args (list :prompt (car prompt-dir)))))))
+    (apply #'consult--read
+           `(,@args :prompt ,(car prompt-dir)
+                    :sort nil
+                    :require-match t))))
 
 ;;;###autoload
 (defun affe-grep (&optional dir initial)
@@ -167,11 +168,9 @@ ARGS are passed to `consult--read'."
      (consult--async-refresh-timer 0.1)
      (consult--async-transform consult--grep-matches)
      (affe--async affe-grep-command))
-   :sort nil
    :initial initial
    :history '(:input affe--grep-history)
    :category 'consult-grep
-   :require-match t
    :add-history (thing-at-point 'symbol)
    :lookup #'consult--lookup-cdr
    :title #'consult--grep-title
@@ -189,11 +188,9 @@ ARGS are passed to `consult--read'."
       (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
       (affe--async affe-find-command))
     :history '(:input affe--find-history)
-    :sort nil
     :initial initial
     :category 'file
-    :add-history (thing-at-point 'filename)
-    :require-match t)))
+    :add-history (thing-at-point 'filename))))
 
 (provide 'affe)
 ;;; affe.el ends here
