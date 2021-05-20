@@ -77,14 +77,13 @@
 
 (defun affe--send (name expr &optional filter)
   "Send EXPR to server NAME and call CALLBACK with result."
-  (let* ((result)
-         (proc (make-network-process
-                :name name
-                :noquery t
-                :filter filter
-                :coding 'raw-text-unix
-                :family 'local
-                :service (expand-file-name name server-socket-dir))))
+  (let ((proc (make-network-process
+               :name name
+               :noquery t
+               :filter filter
+               :coding 'raw-text-unix
+               :family 'local
+               :service (expand-file-name name server-socket-dir))))
     (process-send-string
      proc
      (format "-eval %s\n" (server-quote-arg (prin1-to-string expr))))
