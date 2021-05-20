@@ -38,7 +38,7 @@
   :group 'convenience
   :prefix "affe-")
 
-(defcustom affe-count 50
+(defcustom affe-count 20
   "Number of matches the backend should return."
   :type 'integer)
 
@@ -117,34 +117,50 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
 
 (defun affe--async (async cmd)
   "Create asynchrous completion function from ASYNC with backend CMD."
-  (let ((proc)
+  (let* ((proc) (last-regexps) (indicator)
         (backend (or (locate-library "affe-backend")
                      (error "Could not locate the library `affe-backend.el'")))
-        (last-input)
-        (name (make-temp-name "affe-")))
+        (name (make-temp-name "affe-"))
+        (callback
+         (lambda (lines)
+           (dolist (line lines)
+             (cond
+              ((equal "-affe-flush" line) (funcall async 'flush))
+              ((string-prefix-p "-affe-status " line)
+               (pcase-let ((`(,total ,done ,searching) (read (substring line 13))))
+                 (overlay-put indicator 'display
+                              (format " (total=%s%s)%s"
+                                      (cond
+                                       ((> total 1e6) (format "%.1fM" (/ total 1000000.0)))
+                                       ((> total 1e3) (format "%.1fK" (/ total 1000.0)))
+                                       (t total))
+                                      (if done "" "+")
+                                      (if searching (propertize ":" 'face
+                                                                `(:foreground ,(face-attribute
+                                                                                'error :foreground))) ":")))))
+              ((string-prefix-p "-affe-match " line)
+               (funcall async (funcall affe-highlight-function
+                                       last-regexps
+                                       (list (substring line 12))))))))))
     (lambda (action)
       (pcase action
         ((pred stringp)
-         (unless (or (equal "" action) (equal action last-input))
-           (setq last-input action)
-           (ignore-errors (delete-process proc))
-           (let ((regexps (funcall affe-regexp-function action)))
+         (let ((regexps (funcall affe-regexp-function action)))
+           (unless (or (not regexps) (equal regexps last-regexps))
+             (setq last-regexps regexps)
+             (ignore-errors (delete-process proc))
              (setq proc (affe--send
                          name
                          `(affe-backend-filter ,affe-count ,@regexps)
-                         (lambda (lines)
-                           (dolist (line lines)
-                             (cond
-                              ((equal "-affe-flush" line) (funcall async 'flush))
-                              ((string-prefix-p "-affe-match " line)
-                               (funcall async (funcall affe-highlight-function
-                                                       regexps
-                                                       (list (substring line 12)))))))))))))
+                         callback)))))
         ('destroy
          (ignore-errors (delete-process proc))
          (affe--send name '(kill-emacs))
-         (funcall async 'destroy))
+         (funcall async 'destroy)
+         (delete-overlay indicator))
         ('setup
+         (setq indicator (make-overlay (- (minibuffer-prompt-end) 2)
+                                       (- (minibuffer-prompt-end) 1)))
          (funcall async 'setup)
          (setq-local completion-styles-alist
                      (cons
@@ -162,7 +178,9 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
                              invocation-directory))
           nil nil nil "-Q" (concat "--daemon=" name)
           "-l" backend)
-         (affe--send name `(affe-backend-start ,@(split-string-and-unquote cmd))))
+         (affe--send name
+                     `(affe-backend-start ,@(split-string-and-unquote cmd))
+                     callback))
         (_ (funcall async action))))))
 
 (defun affe--read (prompt dir &rest args)
