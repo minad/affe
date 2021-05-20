@@ -107,10 +107,10 @@
                        (lambda (_proc out)
                          (dolist (line (split-string out "\n"))
                            (cond
+                            ((equal "-affe-flush" line)
+                             (funcall async 'flush))
                             ((string-prefix-p "-affe-match " line)
-                             (funcall async (list (substring line 12))))
-                            ((string-match-p "-affe-\\(refresh\\|flush\\)" line)
-                             (funcall async (intern (substring line 6)))))))))))
+                             (funcall async (list (substring line 12)))))))))))
         ('destroy
          (ignore-errors (delete-process proc))
          (affe--send name '(kill-emacs))
@@ -164,6 +164,7 @@ ARGS are passed to `consult--read'."
   (affe--read
    "Fuzzy grep" dir
    (thread-first (consult--async-sink)
+     (consult--async-refresh-timer 0.1)
      (consult--async-transform consult--grep-matches)
      (affe--async affe-grep-command))
    :sort nil
@@ -184,6 +185,7 @@ ARGS are passed to `consult--read'."
    (affe--read
     "Fuzzy find" dir
     (thread-first (consult--async-sink)
+      (consult--async-refresh-timer 0.1)
       (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
       (affe--async affe-find-command))
     :history '(:input affe--find-history)
