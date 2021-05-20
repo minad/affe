@@ -75,15 +75,29 @@
   "Default highlighting function for CANDS."
   cands)
 
-(defun affe--send (name expr &optional filter)
+(defun affe--send (name expr &optional callback)
   "Send EXPR to server NAME and call CALLBACK with result."
-  (let ((proc (make-network-process
-               :name name
-               :noquery t
-               :filter filter
-               :coding 'raw-text-unix
-               :family 'local
-               :service (expand-file-name name server-socket-dir))))
+  (let* ((rest "")
+         (proc (make-network-process
+                :name name
+                :noquery t
+                :filter
+                (when callback
+                  (lambda (_ out)
+                    (let ((lines (split-string out "\n")))
+                      (if (not (cdr lines))
+                          (setq rest (concat rest (car lines)))
+                        (setcar lines (concat rest (car lines)))
+                        (setq rest (car (last lines)))
+                        (funcall callback (nbutlast lines))))))
+                :sentinel
+                (when callback
+                  (lambda (&rest _)
+                    (unless (equal rest "")
+                      (funcall callback (list rest)))))
+                :coding 'raw-text-unix
+                :family 'local
+                :service (expand-file-name name server-socket-dir))))
     (process-send-string
      proc
      (format "-eval %s\n" (server-quote-arg (prin1-to-string expr))))
@@ -118,15 +132,14 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
              (setq proc (affe--send
                          name
                          `(affe-backend-filter ,affe-count ,@regexps)
-                         (lambda (_proc out)
-                           (let ((pos 0))
-                             (while (string-match "^-affe-\\([^ \n]+\\) ?\\(.*\\)\n" out pos)
-                               (setq pos (match-end 0))
-                               (pcase (match-string 1 out)
-                                 ("match" (funcall async (funcall affe-highlight-function
-                                                                  regexps
-                                                                  (list (match-string 2 out)))))
-                                 ("flush" (funcall async 'flush)))))))))))
+                         (lambda (lines)
+                           (dolist (line lines)
+                             (cond
+                              ((equal "-affe-flush" line) (funcall async 'flush))
+                              ((string-prefix-p "-affe-match " line)
+                               (funcall async (funcall affe-highlight-function
+                                                       regexps
+                                                       (list (substring line 12)))))))))))))
         ('destroy
          (ignore-errors (delete-process proc))
          (affe--send name '(kill-emacs))
