@@ -129,6 +129,7 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
           (lambda (lines)
             (dolist (line lines)
               (pcase (read line)
+                (`(debug . ,msg) (message "Affe: %S" msg))
                 ('flush (funcall async 'flush))
                 (`(producer ,total ,done)
                  (setq indicator-total total indicator-done done))

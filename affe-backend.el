@@ -49,6 +49,7 @@
      (concat (prin1-to-string expr) "\n"))))
 
 (defun affe-backend--producer-filter (_ out)
+  "Process filter for the producer process receiving OUT string."
   (let ((lines (split-string out "\n")))
     (if (not (cdr lines))
         (setq affe-backend--producer-rest (concat affe-backend--producer-rest (car lines)))
@@ -62,6 +63,7 @@
         (setcdr last nil)))))
 
 (defun affe-backend--producer-sentinel (&rest _)
+  "Sentinel for the producer process."
   (setq affe-backend--producer-done t)
   (unless (equal affe-backend--producer-rest "")
     (setq affe-backend--producer-total (1+ affe-backend--producer-total)
@@ -107,18 +109,23 @@
         (affe-backend--search)
         (run-at-time 0.5 nil #'affe-backend--flush)))))
 
+(defun affe-backend--debug (&rest msg)
+  "Send debug message MSG."
+  (affe-backend--send `(debug ,@msg)))
+
 (defun affe-backend--flush ()
   "Send a flush if no matching strings are found."
   (when (= 0 affe-backend--search-found)
     (affe-backend--send 'flush)))
 
 (defun affe-backend--producer-refresh ()
-  "Refresh backend, continue search and send status."
+  "Refresh producer status."
   (affe-backend--send
    `(producer ,affe-backend--producer-total
               ,affe-backend--producer-done)))
 
 (defun affe-backend--search-refresh ()
+  "Refresh search."
   (when (/= 0 affe-backend--search-limit)
     (affe-backend--search)))
 
@@ -157,6 +164,7 @@
   (affe-backend--search-status))
 
 (defun affe-backend--setup ()
+  "Setup backend server."
   (set-process-coding-system server-process 'no-conversion 'no-conversion)
   (set-process-filter server-process #'affe-backend--server-filter))
 
