@@ -93,7 +93,7 @@
      (lambda (&rest _)
        (unless (equal rest "")
          (funcall callback (list rest))))
-     :coding 'raw-text-unix
+     :coding 'no-conversion
      :family 'local
      :service (expand-file-name name server-socket-dir))))
 

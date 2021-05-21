@@ -103,6 +103,7 @@
           (lambda ()
             (setq gc-cons-threshold 67108864
                   gc-cons-percentage 0.5)
+            (set-process-coding-system server-process 'no-conversion 'no-conversion)
             (set-process-filter server-process #'affe-backend--server-filter)))
 
 (provide 'affe-backend)
