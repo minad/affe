@@ -48,7 +48,7 @@
   :type 'string)
 
 (defcustom affe-grep-command
-  "rg --null --line-buffered --color=never --max-columns=1000 --no-heading --line-number -v ^$ ."
+  "rg --null --color=never --max-columns=1000 --no-heading --line-number -v ^$ ."
   "Grep command."
   :type 'string)
 
