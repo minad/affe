@@ -28,7 +28,7 @@
 
 (defvar affe-backend--search-head (list nil))
 (defvar affe-backend--search-tail affe-backend--search-head)
-(defvar affe-backend--search-count 0)
+(defvar affe-backend--search-found 0)
 (defvar affe-backend--search-limit 0)
 (defvar affe-backend--search-regexps nil)
 
@@ -102,7 +102,7 @@
                  affe-backend--search-head (list nil)
                  affe-backend--search-tail affe-backend--search-head
                  affe-backend--search-limit limit
-                 affe-backend--search-count 0
+                 affe-backend--search-found 0
                  affe-backend--search-regexps regexps)
            (affe-backend--send-status 'force))
           (`(start . ,cmd)
@@ -121,10 +121,10 @@
 (defun affe-backend--search-match-found (match)
   "Called when matching string MATCH has been found."
   (affe-backend--send-status)
-  (when (= affe-backend--search-count 0)
+  (when (= affe-backend--search-found 0)
     (affe-backend--send 'flush))
   (affe-backend--send `(match . ,match))
-  (when (>= (setq affe-backend--search-count (1+ affe-backend--search-count))
+  (when (>= (setq affe-backend--search-found (1+ affe-backend--search-found))
             affe-backend--search-limit)
     (throw 'affe-backend--search-done nil))
   nil)
@@ -140,13 +140,13 @@
           affe-backend--producer-tail affe-backend--producer-head)
     (catch 'affe-backend--search-done
       (all-completions "" head #'affe-backend--search-match-found)))
-  (when (or (>= affe-backend--search-count affe-backend--search-limit)
+  (when (or (>= affe-backend--search-found affe-backend--search-limit)
             (and affe-backend--producer-done
                  (not (cdr affe-backend--producer-head))))
     (setq affe-backend--search-limit 0)
     (affe-backend--send-status 'force))
   (when (and (= 0 affe-backend--search-limit)
-             (= 0 affe-backend--search-count))
+             (= 0 affe-backend--search-found))
     (affe-backend--send 'flush)))
 
 (defun affe-backend--setup ()
