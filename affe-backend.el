@@ -103,14 +103,20 @@
                  affe-backend--search-tail affe-backend--search-head
                  affe-backend--search-limit limit
                  affe-backend--search-found 0
-                 affe-backend--search-regexps regexps)
-           (affe-backend--send-status 'force))
+                 affe-backend--search-regexps regexps))
           (`(start . ,cmd)
            (setq affe-backend--client client)
            (run-at-time 0.1 0.1 #'affe-backend--refresh)
            (affe-backend--producer-start cmd))))
       (when (/= 0 affe-backend--search-limit)
-        (affe-backend--search)))))
+        (affe-backend--search)
+        (affe-backend--send-status 'force)
+        (run-at-time 0.5 nil #'affe-backend--flush)))))
+
+(defun affe-backend--flush ()
+  "Send a flush if no matching strings are found."
+  (when (= 0 affe-backend--search-found)
+    (affe-backend--send 'flush)))
 
 (defun affe-backend--refresh ()
   "Refresh backend, continue search and send status."
@@ -121,8 +127,7 @@
 (defun affe-backend--search-match-found (match)
   "Called when matching string MATCH has been found."
   (affe-backend--send-status)
-  (when (= affe-backend--search-found 0)
-    (affe-backend--send 'flush))
+  (affe-backend--flush)
   (affe-backend--send `(match . ,match))
   (when (>= (setq affe-backend--search-found (1+ affe-backend--search-found))
             affe-backend--search-limit)
@@ -145,9 +150,8 @@
                  (not (cdr affe-backend--producer-head))))
     (setq affe-backend--search-limit 0)
     (affe-backend--send-status 'force))
-  (when (and (= 0 affe-backend--search-limit)
-             (= 0 affe-backend--search-found))
-    (affe-backend--send 'flush)))
+  (when (= 0 affe-backend--search-limit)
+    (affe-backend--flush)))
 
 (defun affe-backend--setup ()
   (set-process-coding-system server-process 'no-conversion 'no-conversion)
