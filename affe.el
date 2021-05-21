@@ -183,6 +183,8 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
                              invocation-directory))
           nil nil nil "-Q"
           (concat "--daemon=" name)
+          ;; Invoking Emacs on Mac requires specifing the directory (See #3).
+          ;; TODO Report this issue upstream.
           (concat "--chdir=" default-directory)
           "-l" backend)
          (setq proc (affe--connect name callback))
