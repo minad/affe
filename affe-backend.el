@@ -21,46 +21,61 @@
 
 ;;; Code:
 
+(setq gc-cons-threshold 67108864
+      gc-cons-percentage 0.5)
+
 (require 'server)
 
-(defvar affe-backend--head (list nil))
-(defvar affe-backend--tail affe-backend--head)
-(defvar affe-backend--total 0)
-(defvar affe-backend--done nil)
-(defvar affe-backend--searching nil)
-(defvar affe-backend--server-rest "")
+(defvar affe-backend--search-head (list nil))
+(defvar affe-backend--search-tail affe-backend--search-head)
+(defvar affe-backend--search-count 0)
+(defvar affe-backend--search-limit 0)
+(defvar affe-backend--search-regexps nil)
 
-(defun affe-backend--status (client)
+(defvar affe-backend--producer-head (list nil))
+(defvar affe-backend--producer-tail affe-backend--producer-head)
+(defvar affe-backend--producer-total 0)
+(defvar affe-backend--producer-done nil)
+(defvar affe-backend--producer-rest "")
+
+(defvar affe-backend--client-rest "")
+(defvar affe-backend--client nil)
+
+(defvar affe-backend--status-last 0)
+
+(defun affe-backend--send (expr)
+  "Send EXPR."
+  (process-send-string
+   affe-backend--client
+   (let ((print-escape-newlines t))
+     (concat (prin1-to-string expr) "\n"))))
+
+(defun affe-backend--send-status (&optional force)
   "Send status to the CLIENT."
-  (affe-backend--send client
-              `(status ,affe-backend--total
-                       ,affe-backend--done
-                       ,affe-backend--searching)))
+  (when (or force (> (- (float-time) affe-backend--status-last) 0.1))
+    (setq affe-backend--status-last (float-time))
+    (affe-backend--send
+     `(status ,affe-backend--producer-total
+              ,affe-backend--producer-done
+              ,(/= 0 affe-backend--search-limit)))))
 
-(defun affe-backend--process-filter (_ out)
-  "Process filter function receiving output string OUT."
-  (setq out (split-string out "\n" 'omit-nulls)
-        affe-backend--total (+ affe-backend--total (length out))
-        affe-backend--tail (last (setcdr affe-backend--tail out))))
-
-(defun affe-backend--server-filter (proc out)
-  (let ((lines (split-string out "\n"))
-        (filter nil))
+(defun affe-backend--producer-filter (_ out)
+  (let ((lines (split-string out "\n")))
     (if (not (cdr lines))
-        (setq affe-backend--server-rest (concat affe-backend--server-rest (car lines)))
-      (setcar lines (concat affe-backend--server-rest (car lines)))
-      (setq affe-backend--server-rest (car (last lines)))
-      (dolist (line (nbutlast lines))
-        (pcase (read line)
-          ('exit (kill-emacs))
-          (`(filter . ,f) (setq filter f))
-          (`(start . ,cmd)
-           (run-at-time 0.5 0.5 #'affe-backend--status proc)
-           (affe-backend--process-start cmd)))))
-    (when filter
-      (affe-backend--filter proc (car filter) (cdr filter)))))
+        (setq affe-backend--producer-rest (concat affe-backend--producer-rest (car lines)))
+      (setcar lines (concat affe-backend--producer-rest (car lines)))
+      (setq affe-backend--producer-rest (car (last lines))
+            lines (nbutlast lines)
+            affe-backend--producer-total (+ affe-backend--producer-total (length lines))
+            affe-backend--producer-tail (last (setcdr affe-backend--producer-tail lines))))))
 
-(defun affe-backend--process-start (cmd)
+(defun affe-backend--producer-sentinel (&rest _)
+  (setq affe-backend--producer-done t)
+  (unless (equal affe-backend--producer-rest "")
+    (setq affe-backend--producer-total (1+ affe-backend--producer-total)
+          affe-backend--producer-tail (setcdr affe-backend--producer-tail (list affe-backend--producer-rest)))))
+
+(defun affe-backend--producer-start (cmd)
   "Start backend CMD."
   (make-process
    :name (car cmd)
@@ -68,43 +83,77 @@
    :command cmd
    :connection-type 'pipe
    :stderr "*stderr*"
-   :sentinel (lambda (&rest _) (setq affe-backend--done t))
-   :filter #'affe-backend--process-filter))
+   :sentinel #'affe-backend--producer-sentinel
+   :filter #'affe-backend--producer-filter))
 
-(defun affe-backend--send (proc expr)
-  "Send EXPR to PROC."
-  (process-send-string
-   proc
-   (let ((print-escape-newlines t))
-     (concat (prin1-to-string expr) "\n"))))
+(defun affe-backend--server-filter (client out)
+  "Server filter function receiving CLIENT and OUT string."
+  (let ((lines (split-string out "\n")))
+    (if (not (cdr lines))
+        (setq affe-backend--client-rest (concat affe-backend--client-rest (car lines)))
+      (setcar lines (concat affe-backend--client-rest (car lines)))
+      (setq affe-backend--client-rest (car (last lines)))
+      (dolist (line (nbutlast lines))
+        (pcase (read line)
+          ('exit (kill-emacs))
+          (`(filter ,limit . ,regexps)
+           (setcdr affe-backend--search-tail (cdr affe-backend--producer-head))
+           (setq affe-backend--producer-head affe-backend--search-head
+                 affe-backend--search-head (list nil)
+                 affe-backend--search-tail affe-backend--search-head
+                 affe-backend--search-limit limit
+                 affe-backend--search-count 0
+                 affe-backend--search-regexps regexps)
+           (affe-backend--send-status 'force))
+          (`(start . ,cmd)
+           (setq affe-backend--client client)
+           (run-at-time 0.1 0.1 #'affe-backend--refresh)
+           (affe-backend--producer-start cmd))))
+      (when (/= 0 affe-backend--search-limit)
+        (affe-backend--search)))))
 
-(defun affe-backend--filter (client limit regexps)
-  "Filter lines with REGEXPS returning up to LIMIT matching lines to the CLIENT."
-  (let ((completion-regexp-list regexps)
+(defun affe-backend--refresh ()
+  "Refresh backend, continue search and send status."
+  (affe-backend--send-status)
+  (when (/= 0 affe-backend--search-limit)
+    (affe-backend--search)))
+
+(defun affe-backend--search-match-found (match)
+  "Called when matching string MATCH has been found."
+  (affe-backend--send-status)
+  (when (= affe-backend--search-count 0)
+    (affe-backend--send 'flush))
+  (affe-backend--send `(match . ,match))
+  (when (>= (setq affe-backend--search-count (1+ affe-backend--search-count))
+            affe-backend--search-limit)
+    (throw 'affe-backend--search-done nil))
+  nil)
+
+(defun affe-backend--search ()
+  "Search and send matching lines to client."
+  (let ((completion-regexp-list affe-backend--search-regexps)
         (completion-ignore-case t)
-        (affe-backend--searching t)
-        (count 0))
-    (affe-backend--status client)
-    (catch 'affe--done
-      (all-completions "" (cdr affe-backend--head)
-                       (lambda (cand)
-                         (affe-backend--status client)
-                         (when (= count 0)
-                           (affe-backend--send client 'flush))
-                         (affe-backend--send client `(match . ,cand))
-                         (when (>= (setq count (1+ count)) limit)
-                           (throw 'affe--done nil))
-                         nil)))
-    (when (= count 0)
-      (affe-backend--send client 'flush)))
-  (affe-backend--status client))
+        (head (cdr affe-backend--producer-head)))
+    (setcdr affe-backend--search-tail head)
+    (setq affe-backend--search-tail affe-backend--producer-tail
+          affe-backend--producer-head (list nil)
+          affe-backend--producer-tail affe-backend--producer-head)
+    (catch 'affe-backend--search-done
+      (all-completions "" head #'affe-backend--search-match-found)))
+  (when (or (>= affe-backend--search-count affe-backend--search-limit)
+            (and affe-backend--producer-done
+                 (not (cdr affe-backend--producer-head))))
+    (setq affe-backend--search-limit 0)
+    (affe-backend--send-status 'force))
+  (when (and (= 0 affe-backend--search-limit)
+             (= 0 affe-backend--search-count))
+    (affe-backend--send 'flush)))
 
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (setq gc-cons-threshold 67108864
-                  gc-cons-percentage 0.5)
-            (set-process-coding-system server-process 'no-conversion 'no-conversion)
-            (set-process-filter server-process #'affe-backend--server-filter)))
+(defun affe-backend--setup ()
+  (set-process-coding-system server-process 'no-conversion 'no-conversion)
+  (set-process-filter server-process #'affe-backend--server-filter))
+
+(add-hook 'emacs-startup-hook #'affe-backend--setup)
 
 (provide 'affe-backend)
 ;;; affe-backend.el ends here
