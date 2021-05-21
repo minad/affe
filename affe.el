@@ -118,7 +118,8 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
 
 (defun affe--async (async cmd)
   "Create asynchrous completion function from ASYNC with backend CMD."
-  (let* ((proc) (last-regexps) (indicator)
+  (let* ((proc) (last-regexps)
+         (indicator) (indicator-total 0) (indicator-done) (indicator-active)
          (backend (or (locate-library "affe-backend")
                       (error "Could not locate the library `affe-backend.el'")))
          (name (make-temp-name "affe-"))
@@ -127,28 +128,31 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
             (dolist (line lines)
               (pcase (read line)
                 ('flush (funcall async 'flush))
-                (`(status ,total ,done ,searching)
-                 (overlay-put indicator 'display
-                              (format " (total=%s%s)%s"
-                                      (cond
-                                       ((> total 1e6) (format "%.1fM" (/ total 1000000.0)))
-                                       ((> total 1e3) (format "%.1fK" (/ total 1000.0)))
-                                       (t total))
-                                      (if done "" "+")
-                                      (if searching (propertize ":" 'face
-                                                                `(:foreground ,(face-attribute
-                                                                                'error :foreground))) ":"))))
-                (`(match . ,cand)
+                (`(producer ,total ,done)
+                 (setq indicator-total total indicator-done done))
+                (`(search ,active)
+                 (setq indicator-active active))
+                (`(match ,match)
                  (funcall async (funcall affe-highlight-function
                                          last-regexps
-                                         (list cand)))))))))
+                                         (list match))))))
+            (overlay-put indicator 'display
+                         (format " (total=%s%s)%s"
+                                 (cond
+                                  ((> indicator-total 1e6) (format "%.1fM" (/ indicator-total 1000000.0)))
+                                  ((> indicator-total 1e3) (format "%.1fK" (/ indicator-total 1000.0)))
+                                  (t indicator-total))
+                                 (if indicator-done "" "+")
+                                 (if indicator-active (propertize ":" 'face
+                                                                  `(:foreground ,(face-attribute
+                                                                                  'error :foreground))) ":"))))))
     (lambda (action)
       (pcase action
         ((pred stringp)
          (let ((regexps (funcall affe-regexp-function action)))
            (unless (or (not regexps) (equal regexps last-regexps))
              (setq last-regexps regexps)
-             (affe--send proc `(filter ,affe-count ,@regexps)))))
+             (affe--send proc `(search ,affe-count ,@regexps)))))
         ('destroy
          (affe--send proc 'exit)
          (funcall async 'destroy)

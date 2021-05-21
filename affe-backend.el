@@ -41,23 +41,12 @@
 (defvar affe-backend--client-rest "")
 (defvar affe-backend--client nil)
 
-(defvar affe-backend--status-last 0)
-
 (defun affe-backend--send (expr)
   "Send EXPR."
   (process-send-string
    affe-backend--client
    (let ((print-escape-newlines t))
      (concat (prin1-to-string expr) "\n"))))
-
-(defun affe-backend--send-status (&optional force)
-  "Send status to the CLIENT."
-  (when (or force (> (- (float-time) affe-backend--status-last) 0.1))
-    (setq affe-backend--status-last (float-time))
-    (affe-backend--send
-     `(status ,affe-backend--producer-total
-              ,affe-backend--producer-done
-              ,(/= 0 affe-backend--search-limit)))))
 
 (defun affe-backend--producer-filter (_ out)
   (let ((lines (split-string out "\n")))
@@ -96,7 +85,7 @@
       (dolist (line (nbutlast lines))
         (pcase (read line)
           ('exit (kill-emacs))
-          (`(filter ,limit . ,regexps)
+          (`(search ,limit . ,regexps)
            (setcdr affe-backend--search-tail (cdr affe-backend--producer-head))
            (setq affe-backend--producer-head affe-backend--search-head
                  affe-backend--search-head (list nil)
@@ -106,11 +95,11 @@
                  affe-backend--search-regexps regexps))
           (`(start . ,cmd)
            (setq affe-backend--client client)
-           (run-at-time 0.1 0.1 #'affe-backend--refresh)
+           (run-at-time 0.5 0.5 #'affe-backend--producer-refresh)
+           (run-at-time 0.1 0.1 #'affe-backend--search-refresh)
            (affe-backend--producer-start cmd))))
       (when (/= 0 affe-backend--search-limit)
         (affe-backend--search)
-        (affe-backend--send-status 'force)
         (run-at-time 0.5 nil #'affe-backend--flush)))))
 
 (defun affe-backend--flush ()
@@ -118,17 +107,25 @@
   (when (= 0 affe-backend--search-found)
     (affe-backend--send 'flush)))
 
-(defun affe-backend--refresh ()
+(defun affe-backend--producer-refresh ()
   "Refresh backend, continue search and send status."
-  (affe-backend--send-status)
+  (affe-backend--send
+   `(producer ,affe-backend--producer-total
+              ,affe-backend--producer-done)))
+
+(defun affe-backend--search-refresh ()
   (when (/= 0 affe-backend--search-limit)
     (affe-backend--search)))
 
+(defun affe-backend--search-status ()
+  "Send status to the CLIENT."
+  (affe-backend--send `(search ,(/= 0 affe-backend--search-limit))))
+
 (defun affe-backend--search-match-found (match)
   "Called when matching string MATCH has been found."
-  (affe-backend--send-status)
+  (affe-backend--search-status)
   (affe-backend--flush)
-  (affe-backend--send `(match . ,match))
+  (affe-backend--send `(match ,match))
   (when (>= (setq affe-backend--search-found (1+ affe-backend--search-found))
             affe-backend--search-limit)
     (throw 'affe-backend--search-done nil))
@@ -136,6 +133,7 @@
 
 (defun affe-backend--search ()
   "Search and send matching lines to client."
+  (affe-backend--search-status)
   (let ((completion-regexp-list affe-backend--search-regexps)
         (completion-ignore-case t)
         (head (cdr affe-backend--producer-head)))
@@ -148,10 +146,10 @@
   (when (or (>= affe-backend--search-found affe-backend--search-limit)
             (and affe-backend--producer-done
                  (not (cdr affe-backend--producer-head))))
-    (setq affe-backend--search-limit 0)
-    (affe-backend--send-status 'force))
+    (setq affe-backend--search-limit 0))
   (when (= 0 affe-backend--search-limit)
-    (affe-backend--flush)))
+    (affe-backend--flush))
+  (affe-backend--search-status))
 
 (defun affe-backend--setup ()
   (set-process-coding-system server-process 'no-conversion 'no-conversion)
