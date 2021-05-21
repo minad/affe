@@ -171,7 +171,9 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
           (file-truename
            (expand-file-name invocation-name
                              invocation-directory))
-          nil nil nil "-Q" (concat "--daemon=" name)
+          nil nil nil "-Q"
+          (concat "--daemon=" name)
+          (concat "--chdir=" default-directory)
           "-l" backend)
          (setq proc (affe--connect name callback))
          (affe--send proc `(start ,@(split-string-and-unquote cmd))))
