@@ -93,13 +93,14 @@
         (pcase (read line)
           ('exit (kill-emacs))
           (`(search ,limit . ,regexps)
-           (setcdr affe-backend--search-tail (cdr affe-backend--producer-head))
-           (setq affe-backend--producer-head affe-backend--search-head
-                 affe-backend--search-head (list nil)
-                 affe-backend--search-tail affe-backend--search-head
-                 affe-backend--search-limit limit
-                 affe-backend--search-found 0
-                 affe-backend--search-regexps regexps))
+             (affe-backend--append-producer)
+             (setq affe-backend--producer-head affe-backend--search-head
+                   affe-backend--producer-tail affe-backend--search-tail
+                   affe-backend--search-head (list nil)
+                   affe-backend--search-tail affe-backend--search-head
+                   affe-backend--search-limit limit
+                   affe-backend--search-found 0
+                   affe-backend--search-regexps regexps))
           (`(start . ,cmd)
            (setq affe-backend--client client)
            (run-at-time 0.5 0.5 #'affe-backend--producer-refresh)
@@ -143,18 +144,23 @@
     (throw 'affe-backend--search-done nil))
   nil)
 
-(defun affe-backend--search ()
-  "Search and send matching lines to client."
-  (affe-backend--search-status)
-  (let ((completion-regexp-list affe-backend--search-regexps)
-        (completion-ignore-case t)
-        (head (cdr affe-backend--producer-head)))
+(defun affe-backend--append-producer ()
+  "Append producer list to search list."
+  (when-let (head (cdr affe-backend--producer-head))
     (setcdr affe-backend--search-tail head)
     (setq affe-backend--search-tail affe-backend--producer-tail
           affe-backend--producer-head (list nil)
-          affe-backend--producer-tail affe-backend--producer-head)
+          affe-backend--producer-tail affe-backend--producer-head)))
+
+(defun affe-backend--search ()
+  "Search and send matching lines to client."
+  (affe-backend--search-status)
+  (when-let (head (cdr affe-backend--producer-head))
+    (affe-backend--append-producer)
     (catch 'affe-backend--search-done
-      (all-completions "" head #'affe-backend--search-match-found)))
+      (let ((completion-regexp-list affe-backend--search-regexps)
+            (completion-ignore-case t))
+        (all-completions "" head #'affe-backend--search-match-found))))
   (when (or (>= affe-backend--search-found affe-backend--search-limit)
             (and affe-backend--producer-done
                  (not (cdr affe-backend--producer-head))))
