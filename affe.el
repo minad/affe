@@ -112,11 +112,14 @@ See `completion-all-completions' for the arguments STR, TABLE, PRED and POINT."
   (let ((completion-regexp-list))
     (all-completions "" table pred)))
 
-(defun affe--passthrough-try-completion (_str table pred _point)
+(defun affe--passthrough-try-completion (str table pred _point)
   "Passthrough completion function.
 See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
-  (let ((completion-regexp-list))
-    (and (try-completion "" table pred) t)))
+  (let ((completion-regexp-list)
+        (completion (try-completion str table pred)))
+    (if (stringp completion)
+        (cons completion (length completion))
+      completion)))
 
 (defun affe--async (async cmd)
   "Create asynchrous completion function from ASYNC with backend CMD."
