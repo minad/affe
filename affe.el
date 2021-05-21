@@ -87,8 +87,10 @@
          (if (not (cdr lines))
              (setq rest (concat rest (car lines)))
            (setcar lines (concat rest (car lines)))
-           (setq rest (car (last lines)))
-           (funcall callback (nbutlast lines)))))
+           (let ((last (last lines 2)))
+             (setq rest (cadr last))
+             (setcdr last nil))
+           (funcall callback lines))))
      :sentinel
      (lambda (&rest _)
        (unless (equal rest "")
