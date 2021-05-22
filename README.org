@@ -39,7 +39,7 @@ use [[https://github.com/oantolin/orderless][Orderless]] instead. Furthermore a 
           affe-highlight-function #'orderless-highlight-matches)
 
     ;; Manual preview key for `affe-grep'
-    (setf (alist-get #'affe-grep consult-config) `(:preview-key ,(kbd "M-."))))
+    (consult-customize affe-grep :preview-key (kbd "M-.")))
 #+end_src
 
 Affe requires the ~find~ and ~ripgrep~ command line programs to be available.
