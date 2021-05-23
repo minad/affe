@@ -215,7 +215,7 @@ ARGS are passed to `consult--read'."
    :category 'consult-grep
    :add-history (thing-at-point 'symbol)
    :lookup #'consult--lookup-cdr
-   :title #'consult--grep-title
+   :group #'consult--grep-group
    :state (consult--grep-state)))
 
 ;;;###autoload
