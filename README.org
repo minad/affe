@@ -6,6 +6,9 @@
 #+texinfo_dir_title: Affe: (affe).
 #+texinfo_dir_desc: Asynchronous Fuzzy Finder for Emacs.
 
+#+html: <a href="https://melpa.org/#/affe"><img alt="MELPA" src="https://melpa.org/packages/affe-badge.svg"/></a>
+#+html: <a href="https://stable.melpa.org/#/affe"><img alt="MELPA Stable" src="https://stable.melpa.org/packages/affe-badge.svg"/></a>
+
 #+html: <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Lar_Gibbon_%2846946767992%29.jpg/1920px-Lar_Gibbon_%2846946767992%29.jpg" align="right" width="40%">
 
 This package provides an asynchronous fuzzy finder similar to the [[https://github.com/junegunn/fzf][fzf
@@ -18,17 +21,10 @@ allows to quickly select from the available items.
 
 * Installation and Configuration
 
-The package is not yet available on MELPA or ELPA. Therefore installation must
-be done manually using your package manager of choice. For package.el,
-installation requires these steps:
-
-1. Clone the repository
-2. Open a dired buffer =~/affe/=
-3. =M-x package-install-from-buffer RET=
-
-The default regular expression transformation is limited. It is recommended to
-use [[https://github.com/oantolin/orderless][Orderless]] instead. Furthermore a manual preview key should be set for
-~affe-grep~.
+The package is available on MELPA and can be installed using the Emacs package
+manager. The default regular expression transformation is limited. It is
+recommended to use [[https://github.com/oantolin/orderless][Orderless]] as pattern compiler for the filter expressions.
+Furthermore a manual preview key should be set for ~affe-grep~.
 
 #+begin_src emacs-lisp
   (use-package affe
