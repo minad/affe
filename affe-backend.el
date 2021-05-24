@@ -108,6 +108,11 @@
         (affe-backend--search)
         (run-at-time 0.5 nil #'affe-backend--flush)))))
 
+(defun affe-backend--sigusr2 ()
+  (interactive)
+  (affe-backend--debug "INTERRUPTED2"))
+(define-key special-event-map [sigusr2] #'affe-backend--sigusr2)
+
 (defun affe-backend--debug (&rest msg)
   "Send debug message MSG."
   (affe-backend--send `(debug ,@msg)))
@@ -163,8 +168,10 @@
             (all-completions "" head #'affe-backend--search-match-found)))
       (quit
        ;; Interrupted
-       ;;(affe-backend--debug "INTERRUPTED")
-       (setq affe-backend--search-limit 0))))
+       (setq affe-backend--search-limit 0)
+       (affe-backend--debug "INTERRUPTED1")
+       (signal-process (emacs-pid) 'sigusr2)
+       )))
   (when (or (>= affe-backend--search-found affe-backend--search-limit)
             (and affe-backend--producer-done
                  (not (cdr affe-backend--producer-head))))
