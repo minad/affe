@@ -123,7 +123,7 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
 
 (defun affe--async (async cmd)
   "Create asynchrous completion function from ASYNC with backend CMD."
-  (let* ((proc) (last-regexps) (pid)
+  (let* ((proc) (last-regexps)
          (indicator) (indicator-total 0) (indicator-done) (indicator-active)
          (backend (or (locate-library "affe-backend")
                       (error "Could not locate the library `affe-backend.el'")))
@@ -136,8 +136,8 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
                 ('flush (funcall async 'flush))
                 (`(producer ,total ,done)
                  (setq indicator-total total indicator-done done))
-                (`(search ,active) (setq indicator-active active))
-                (`(pid ,p) (setq pid p))
+                (`(search ,active)
+                 (setq indicator-active active))
                 (`(match ,match)
                  (funcall async (funcall affe-highlight-function
                                          last-regexps
@@ -158,10 +158,8 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
          (let ((regexps (funcall affe-regexp-function action)))
            (unless (or (not regexps) (equal regexps last-regexps))
              (setq last-regexps regexps)
-             (signal-process pid 'sigusr2)
              (affe--send proc `(search ,affe-count ,@regexps)))))
         ('destroy
-         (signal-process pid 'sigusr2)
          (affe--send proc 'exit)
          (funcall async 'destroy)
          (delete-overlay indicator))
