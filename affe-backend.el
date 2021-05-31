@@ -62,8 +62,11 @@
               affe-backend--producer-tail last)
         (setcdr last nil)))))
 
-(defun affe-backend--producer-sentinel (&rest _)
-  "Sentinel for the producer process."
+(defun affe-backend--producer-sentinel (_ status)
+  "Sentinel for the producer process, receiving STATUS."
+  (affe-backend--log "Sentinel: %s\n" status)
+  (with-current-buffer (get-buffer-create "*producer stderr*")
+    (affe-backend--log "Stderr:\n%s\n" (buffer-string)))
   (setq affe-backend--producer-done t)
   (unless (equal affe-backend--producer-rest "")
     (setq affe-backend--producer-total (1+ affe-backend--producer-total)
@@ -71,12 +74,13 @@
 
 (defun affe-backend--producer-start (cmd)
   "Start backend CMD."
+  (affe-backend--log  "Starting %S\n" cmd)
   (make-process
    :name (car cmd)
    :noquery t
    :command cmd
    :connection-type 'pipe
-   :stderr "*stderr*"
+   :stderr "*producer stderr*"
    :sentinel #'affe-backend--producer-sentinel
    :filter #'affe-backend--producer-filter))
 
@@ -110,9 +114,9 @@
         (affe-backend--search)
         (run-at-time 0.5 nil #'affe-backend--flush)))))
 
-(defun affe-backend--debug (&rest msg)
-  "Send debug message MSG."
-  (affe-backend--send `(debug ,@msg)))
+(defun affe-backend--log (&rest msg)
+  "Send log message MSG."
+  (affe-backend--send `(log ,(apply #'format msg))))
 
 (defun affe-backend--flush ()
   "Send a flush if no matching strings are found."
