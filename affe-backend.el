@@ -175,7 +175,7 @@
 
 (defun affe-backend--setup ()
   "Setup backend server."
-  (set-process-coding-system server-process 'no-conversion 'no-conversion)
+  (set-process-coding-system server-process 'utf-8 'utf-8)
   (set-process-filter server-process #'affe-backend--server-filter))
 
 (add-hook 'emacs-startup-hook #'affe-backend--setup)

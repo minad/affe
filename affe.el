@@ -81,6 +81,7 @@
     (make-network-process
      :name name
      :noquery t
+     :coding 'utf-8
      :filter
      (lambda (_ out)
        (let ((lines (split-string out "\n")))
@@ -95,7 +96,6 @@
      (lambda (&rest _)
        (unless (equal rest "")
          (funcall callback (list rest))))
-     :coding 'no-conversion
      :family 'local
      :service (expand-file-name name server-socket-dir))))
 
