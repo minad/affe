@@ -42,6 +42,12 @@
   "Number of matches the backend should return."
   :type 'integer)
 
+(defcustom affe-connect-coding-system nil
+  "Coding system to use `affe--connect'.
+
+If nil use `buffer-file-coding-system' as default."
+  :type 'symbol)
+
 (defcustom affe-find-command
   "find -not ( -wholename */.* -prune ) -type f"
   "Find file command."
@@ -95,7 +101,7 @@
      (lambda (&rest _)
        (unless (equal rest "")
          (funcall callback (list rest))))
-     :coding 'no-conversion
+     :coding (or affe-connect-coding-system buffer-file-coding-system)
      :family 'local
      :service (expand-file-name name server-socket-dir))))
 
