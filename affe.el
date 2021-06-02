@@ -228,17 +228,19 @@ ARGS are passed to `consult--read'."
 (defun affe-find (&optional dir initial)
   "Fuzzy find in DIR with optional INITIAL input."
   (interactive "P")
-  (find-file
-   (affe--read
-    "Fuzzy find" dir
-    (thread-first (consult--async-sink)
-      (consult--async-refresh-timer 0.05)
-      (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
-      (affe--async affe-find-command))
-    :history '(:input affe--find-history)
-    :initial initial
-    :category 'file
-    :add-history (thing-at-point 'filename))))
+  (affe--read
+   "Fuzzy find" dir
+   (thread-first (consult--async-sink)
+     (consult--async-refresh-timer 0.05)
+     (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
+     (affe--async affe-find-command))
+   :history '(:input affe--find-history)
+   :initial initial
+   :category 'file
+   :add-history (thing-at-point 'filename)
+   :state (lambda (cand restore)
+            (when (and cand restore)
+              (find-file cand)))))
 
 (provide 'affe)
 ;;; affe.el ends here
