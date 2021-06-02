@@ -50,13 +50,14 @@
    (let ((print-escape-newlines t))
      (concat (prin1-to-string expr) "\n"))))
 
-(defun affe-backend--transformer-grep (line)
-  "Transform grep output LINE."
-  (if (string-match "\\`[^\0]+\0[^\0:]+[\0:]" line)
-      (let ((rest (substring line (match-end 0))))
-        (put-text-property 0 1 'affe--prefix (match-string 0 line) rest)
-        rest)
-    line))
+(defun affe-backend--transformer-grep (lines)
+  "Transform grep output LINES."
+  (while lines
+    (let ((line (car lines)))
+      (when (string-match "\\`[^\0]+\0[^\0:]+[\0:]" line)
+        (setcar lines (substring line (match-end 0)))
+        (put-text-property 0 1 'affe--prefix (match-string 0 line) (car lines))))
+    (pop lines)))
 
 (defun affe-backend--producer-filter (_ out)
   "Process filter for the producer process receiving OUT string."
@@ -69,10 +70,7 @@
              (rest (cadr last)))
         (setcdr affe-backend--producer-tail lines)
         (setcdr last nil)
-        (when affe-backend--transformer
-          (while lines
-            (setcar lines (funcall affe-backend--transformer (car lines)))
-            (pop lines)))
+        (funcall affe-backend--transformer lines)
         (setq affe-backend--producer-rest rest
               affe-backend--producer-total (+ affe-backend--producer-total len -1)
               affe-backend--producer-tail last)))))

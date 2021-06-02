@@ -191,7 +191,8 @@ TRANSFORMER is a transformer function."
           (concat "--chdir=" default-directory)
           "-l" backend)
          (setq proc (affe--connect name callback))
-         (affe--send proc `(start ,transformer ,@(split-string-and-unquote cmd))))
+         (affe--send proc `(start ,(or transformer #'ignore)
+                                  ,@(split-string-and-unquote cmd))))
         (_ (funcall async action))))))
 
 (defun affe--read (prompt dir &rest args)
