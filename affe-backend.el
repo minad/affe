@@ -41,6 +41,8 @@
 (defvar affe-backend--client-rest "")
 (defvar affe-backend--client nil)
 
+(defvar affe-backend--prefix nil)
+
 (defun affe-backend--send (expr)
   "Send EXPR."
   (process-send-string
@@ -55,12 +57,20 @@
         (setq affe-backend--producer-rest (concat affe-backend--producer-rest (car lines)))
       (setcar lines (concat affe-backend--producer-rest (car lines)))
       (let* ((len (length lines))
-             (last (nthcdr (- len 2) lines)))
+             (last (nthcdr (- len 2) lines))
+             (rest (cadr last)))
         (setcdr affe-backend--producer-tail lines)
-        (setq affe-backend--producer-rest (cadr last)
+        (setcdr last nil)
+        (when affe-backend--prefix
+          (while lines
+            (let ((line (car lines)))
+              (when (string-match affe-backend--prefix line)
+                (setcar lines (substring line (match-end 0)))
+                (put-text-property 0 1 'affe--prefix (match-string 0 line) (car lines))))
+            (pop lines)))
+        (setq affe-backend--producer-rest rest
               affe-backend--producer-total (+ affe-backend--producer-total len -1)
-              affe-backend--producer-tail last)
-        (setcdr last nil)))))
+              affe-backend--producer-tail last)))))
 
 (defun affe-backend--producer-sentinel (_ status)
   "Sentinel for the producer process, receiving STATUS."
@@ -105,8 +115,9 @@
                    affe-backend--search-limit limit
                    affe-backend--search-found 0
                    affe-backend--search-regexps regexps))
-          (`(start . ,cmd)
-           (setq affe-backend--client client)
+          (`(start ,prefix . ,cmd)
+           (setq affe-backend--client client
+                 affe-backend--prefix prefix)
            (run-at-time 0.5 0.5 #'affe-backend--producer-refresh)
            (run-at-time 0.1 0.1 #'affe-backend--search-refresh)
            (affe-backend--producer-start cmd))))
@@ -142,7 +153,8 @@
   "Called when matching string MATCH has been found."
   (affe-backend--search-status)
   (affe-backend--flush)
-  (affe-backend--send `(match ,match))
+  (affe-backend--send `(match ,(get-text-property 0 'affe--prefix match)
+                              ,(substring-no-properties match)))
   (when (>= (setq affe-backend--search-found (1+ affe-backend--search-found))
             affe-backend--search-limit)
     (throw 'affe-backend--search-done nil))

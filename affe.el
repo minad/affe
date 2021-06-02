@@ -121,8 +121,10 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
         (cons completion (length completion))
       completion)))
 
-(defun affe--async (async cmd)
-  "Create asynchrous completion function from ASYNC with backend CMD."
+(defun affe--async (async cmd &optional prefix)
+  "Create asynchrous completion function from ASYNC.
+CMD is the backend command.
+PREFIX is a prefix regexp."
   (let* ((proc) (last-regexps)
          (indicator) (indicator-total 0) (indicator-done) (indicator-active)
          (backend (or (locate-library "affe-backend")
@@ -140,10 +142,12 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
                  (setq indicator-total total indicator-done done))
                 (`(search ,active)
                  (setq indicator-active active))
-                (`(match ,match)
-                 (funcall async (funcall affe-highlight-function
-                                         last-regexps
-                                         (list match))))))
+                (`(match ,prefix ,match)
+                 (funcall async (list
+                                 (concat prefix
+                                         (car (funcall affe-highlight-function
+                                                       last-regexps
+                                                       (list match)))))))))
             (overlay-put indicator 'display
                          (format " (total=%s%s)%s"
                                  (cond
@@ -189,7 +193,7 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
           (concat "--chdir=" default-directory)
           "-l" backend)
          (setq proc (affe--connect name callback))
-         (affe--send proc `(start ,@(split-string-and-unquote cmd))))
+         (affe--send proc `(start ,prefix ,@(split-string-and-unquote cmd))))
         (_ (funcall async action))))))
 
 (defun affe--read (prompt dir &rest args)
@@ -211,7 +215,7 @@ ARGS are passed to `consult--read'."
    (thread-first (consult--async-sink)
      (consult--async-refresh-timer 0.05)
      (consult--async-transform consult--grep-matches)
-     (affe--async affe-grep-command))
+     (affe--async affe-grep-command "\\`[^\0]+\0[^\0:]+[\0:]"))
    :initial initial
    :history '(:input affe--grep-history)
    :category 'consult-grep
