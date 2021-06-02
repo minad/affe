@@ -215,16 +215,15 @@ ARGS are passed to `consult--read'."
    (thread-first (consult--async-sink)
      (consult--async-refresh-timer 0.05)
      (consult--async-transform consult--grep-matches)
-     (consult--async-map (lambda (line) (concat (get-text-property 0 'affe--file line) line)))
+     (consult--async-map (lambda (line) (concat (get-text-property 0 'affe--prefix line) line)))
      (affe--async affe-grep-command
                   ;; The transformer must be quoted here!
                   '(lambda (line)
-                    (let ((pos (string-match-p "\0" line)))
-                      (if pos
-                          (let ((rest (substring line (1+ pos))))
-                            (put-text-property 0 1 'affe--file (substring line 0 (1+ pos)) rest)
-                            rest)
-                        line)))))
+                     (if (string-match "\\`[^\0]+\0[^\0:]+[\0:]" line)
+                         (let ((rest (substring line (match-end 0))))
+                           (put-text-property 0 1 'affe--prefix (match-string 0 line) rest)
+                           rest)
+                       line))))
    :initial initial
    :history '(:input affe--grep-history)
    :category 'consult-grep
