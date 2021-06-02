@@ -41,6 +41,8 @@
 (defvar affe-backend--client-rest "")
 (defvar affe-backend--client nil)
 
+(defvar affe-backend--transformer nil)
+
 (defun affe-backend--send (expr)
   "Send EXPR."
   (process-send-string
@@ -55,12 +57,17 @@
         (setq affe-backend--producer-rest (concat affe-backend--producer-rest (car lines)))
       (setcar lines (concat affe-backend--producer-rest (car lines)))
       (let* ((len (length lines))
-             (last (nthcdr (- len 2) lines)))
+             (last (nthcdr (- len 2) lines))
+             (rest (cadr last)))
         (setcdr affe-backend--producer-tail lines)
-        (setq affe-backend--producer-rest (cadr last)
+        (setcdr last nil)
+        (when affe-backend--transformer
+          (while lines
+            (setcar lines (funcall affe-backend--transformer (car lines)))
+            (pop lines)))
+        (setq affe-backend--producer-rest rest
               affe-backend--producer-total (+ affe-backend--producer-total len -1)
-              affe-backend--producer-tail last)
-        (setcdr last nil)))))
+              affe-backend--producer-tail last)))))
 
 (defun affe-backend--producer-sentinel (_ status)
   "Sentinel for the producer process, receiving STATUS."
@@ -86,6 +93,7 @@
 
 (defun affe-backend--server-filter (client out)
   "Server filter function receiving CLIENT and OUT string."
+  (setq affe-backend--client client)
   (let ((lines (split-string out "\n")))
     (if (not (cdr lines))
         (setq affe-backend--client-rest (concat affe-backend--client-rest (car lines)))
@@ -105,8 +113,10 @@
                    affe-backend--search-limit limit
                    affe-backend--search-found 0
                    affe-backend--search-regexps regexps))
+          (`(transformer ,transformer)
+           (require 'bytecomp)
+           (setq affe-backend--transformer (byte-compile-lambda transformer)))
           (`(start . ,cmd)
-           (setq affe-backend--client client)
            (run-at-time 0.5 0.5 #'affe-backend--producer-refresh)
            (run-at-time 0.1 0.1 #'affe-backend--search-refresh)
            (affe-backend--producer-start cmd))))

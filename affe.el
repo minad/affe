@@ -121,8 +121,10 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
         (cons completion (length completion))
       completion)))
 
-(defun affe--async (async cmd)
-  "Create asynchrous completion function from ASYNC with backend CMD."
+(defun affe--async (async cmd &optional transformer)
+  "Create asynchrous completion function from ASYNC.
+CMD is the backend command.
+TRANSFORMER is a transformer lambda, which must be quoted."
   (let* ((proc) (last-regexps)
          (indicator) (indicator-total 0) (indicator-done) (indicator-active)
          (backend (or (locate-library "affe-backend")
@@ -189,6 +191,8 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
           (concat "--chdir=" default-directory)
           "-l" backend)
          (setq proc (affe--connect name callback))
+         (when transformer
+           (affe--send proc `(transformer ,transformer)))
          (affe--send proc `(start ,@(split-string-and-unquote cmd))))
         (_ (funcall async action))))))
 
@@ -211,7 +215,16 @@ ARGS are passed to `consult--read'."
    (thread-first (consult--async-sink)
      (consult--async-refresh-timer 0.05)
      (consult--async-transform consult--grep-matches)
-     (affe--async affe-grep-command))
+     (consult--async-map (lambda (line) (concat (get-text-property 0 'affe--file line) line)))
+     (affe--async affe-grep-command
+                  ;; The transformer must be quoted here!
+                  '(lambda (line)
+                    (let ((pos (string-match-p "\0" line)))
+                      (if pos
+                          (let ((rest (substring line (1+ pos))))
+                            (put-text-property 0 1 'affe--file (substring line 0 (1+ pos)) rest)
+                            rest)
+                        line)))))
    :initial initial
    :history '(:input affe--grep-history)
    :category 'consult-grep
