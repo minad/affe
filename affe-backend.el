@@ -50,6 +50,14 @@
    (let ((print-escape-newlines t))
      (concat (prin1-to-string expr) "\n"))))
 
+(defun affe-backend--transformer-grep (line)
+  "Transform grep output LINE."
+  (if (string-match "\\`[^\0]+\0[^\0:]+[\0:]" line)
+      (let ((rest (substring line (match-end 0))))
+        (put-text-property 0 1 'affe--prefix (match-string 0 line) rest)
+        rest)
+    line))
+
 (defun affe-backend--producer-filter (_ out)
   "Process filter for the producer process receiving OUT string."
   (let ((lines (split-string out "\n")))
@@ -93,7 +101,6 @@
 
 (defun affe-backend--server-filter (client out)
   "Server filter function receiving CLIENT and OUT string."
-  (setq affe-backend--client client)
   (let ((lines (split-string out "\n")))
     (if (not (cdr lines))
         (setq affe-backend--client-rest (concat affe-backend--client-rest (car lines)))
@@ -113,10 +120,9 @@
                    affe-backend--search-limit limit
                    affe-backend--search-found 0
                    affe-backend--search-regexps regexps))
-          (`(transformer ,transformer)
-           (require 'bytecomp)
-           (setq affe-backend--transformer (byte-compile-lambda transformer)))
-          (`(start . ,cmd)
+          (`(start ,transformer . ,cmd)
+           (setq affe-backend--client client
+                 affe-backend--transformer transformer)
            (run-at-time 0.5 0.5 #'affe-backend--producer-refresh)
            (run-at-time 0.1 0.1 #'affe-backend--search-refresh)
            (affe-backend--producer-start cmd))))
