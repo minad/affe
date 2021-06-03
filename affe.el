@@ -57,7 +57,7 @@
   :type 'function)
 
 (defcustom affe-highlight-function #'affe-default-highlight
-  "Highlighting function taking the list of regexps and the list of matches."
+  "Highlighting function taking the list of regexps and a match."
   :type 'function)
 
 (defvar affe--grep-history nil)
@@ -71,9 +71,9 @@
               (invalid-regexp nil)))
           (split-string pattern nil t)))
 
-(defun affe-default-highlight (_ cands)
-  "Default highlighting function for CANDS."
-  cands)
+(defun affe-default-highlight (_ cand)
+  "Default highlighting function for CAND."
+  cand)
 
 (defun affe--connect (name callback)
   "Send EXPR to server NAME and call CALLBACK with result."
@@ -143,11 +143,12 @@ REGEXP is the regexp which restricts the substring to match against."
                 (`(search ,active)
                  (setq indicator-active active))
                 (`(match ,prefix ,match ,suffix)
+                 (when (eq affe-highlight-function 'orderless-highlight-matches)
+                   (message "`affe-highlight-function' should be set to `orderless--highlight', see README")
+                   (setq affe-highlight-function 'orderless--highlight))
                  (funcall async (list
                                  (concat prefix
-                                         (car (funcall affe-highlight-function
-                                                       last-regexps
-                                                       (list match)))
+                                         (funcall affe-highlight-function last-regexps match)
                                          suffix))))))
             (overlay-put indicator 'display
                          (format " (total=%s%s)%s"
