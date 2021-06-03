@@ -26,6 +26,15 @@ manager. The default regular expression transformation is limited. It is
 recommended to use [[https://github.com/oantolin/orderless][Orderless]] as pattern compiler for the filter expressions.
 Furthermore a manual preview key should be set for ~affe-grep~.
 
+Configuration without Orderless:
+#+begin_src emacs-lisp
+  (use-package affe
+    :config
+    ;; Manual preview key for `affe-grep'
+    (consult-customize affe-grep :preview-key (kbd "M-.")))
+#+end_src
+
+Configuration with Orderless:
 #+begin_src emacs-lisp
   (use-package affe
     :after orderless
