@@ -64,16 +64,18 @@
 (defvar affe--find-history nil)
 
 (defun affe-default-regexp (pattern)
-  "Default PATTERN regexp transformation function."
+  "Transformation function, which splits PATTERN at spaces and treats each word as a regexp."
   (mapcan (lambda (word)
             (condition-case nil
                 (progn (string-match-p word "") (list word))
               (invalid-regexp nil)))
           (split-string pattern nil t)))
 
-(defun affe-default-highlight (_ cand)
-  "Default highlighting function for CAND."
-  cand)
+(defun affe-default-highlight (regexps str)
+  "Highlight STR with REGEXPS."
+  (dolist (regexp regexps str)
+    (when (string-match regexp str)
+      (add-face-text-property (match-beginning 0) (match-end 0) 'highlight nil str))))
 
 (defun affe--connect (name callback)
   "Send EXPR to server NAME and call CALLBACK with result."
