@@ -48,7 +48,7 @@
   :type 'string)
 
 (defcustom affe-grep-command
-  "rg --null --color=never --max-columns=1000 --no-heading --line-number -v ^$ ."
+  "rg --color=never --max-columns=1000 --no-heading --line-number -v ^$ ."
   "Grep command."
   :type 'string)
 
@@ -197,7 +197,8 @@ REGEXP is the regexp which restricts the substring to match against."
           (concat "--chdir=" default-directory)
           "-l" backend)
          (setq proc (affe--connect name callback))
-         (affe--send proc `(start ,regexp ,@(split-string-and-unquote cmd))))
+         (affe--send proc `(start ,regexp ,@(split-string-and-unquote cmd)))
+         (affe--send proc `(search ,affe-count)))
         (_ (funcall async action))))))
 
 (defun affe--read (prompt dir &rest args)
@@ -214,19 +215,20 @@ ARGS are passed to `consult--read'."
 (defun affe-grep (&optional dir initial)
   "Fuzzy grep in DIR with optional INITIAL input."
   (interactive "P")
-  (affe--read
-   "Fuzzy grep" dir
-   (thread-first (consult--async-sink)
-     (consult--async-refresh-timer 0.05)
-     (consult--async-transform consult--grep-matches)
-     (affe--async affe-grep-command "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'"))
-   :initial initial
-   :history '(:input affe--grep-history)
-   :category 'consult-grep
-   :add-history (thing-at-point 'symbol)
-   :lookup #'consult--lookup-cdr
-   :group #'consult--grep-group
-   :state (consult--grep-state)))
+  (let ((config (list :match consult--grep-match-regexp)))
+    (affe--read
+     "Fuzzy grep" dir
+     (thread-first (consult--async-sink)
+       (consult--async-refresh-timer 0.05)
+       (consult--grep-format config)
+       (affe--async affe-grep-command "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'"))
+     :initial initial
+     :history '(:input affe--grep-history)
+     :category 'consult-grep
+     :add-history (thing-at-point 'symbol)
+     :lookup #'consult--lookup-cdr
+     :group #'consult--grep-group
+     :state (consult--grep-state config))))
 
 ;;;###autoload
 (defun affe-find (&optional dir initial)
