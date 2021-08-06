@@ -56,7 +56,7 @@
   "Transformation function from input string to list of regexps."
   :type 'function)
 
-(defcustom affe-highlight-function #'affe-default-highlight
+(defcustom affe-highlight-function #'consult--highlight-regexps
   "Highlighting function taking the list of regexps and a match."
   :type 'function)
 
@@ -70,12 +70,6 @@
                 (progn (string-match-p word "") (list word))
               (invalid-regexp nil)))
           (split-string pattern nil t)))
-
-(defun affe-default-highlight (regexps str)
-  "Highlight STR with REGEXPS."
-  (dolist (regexp regexps str)
-    (when (string-match regexp str)
-      (add-face-text-property (match-beginning 0) (match-end 0) 'highlight nil str))))
 
 (defun affe--connect (name callback)
   "Send EXPR to server NAME and call CALLBACK with result."
@@ -145,6 +139,7 @@ REGEXP is the regexp which restricts the substring to match against."
                 (`(search ,active)
                  (setq indicator-active active))
                 (`(match ,prefix ,match ,suffix)
+                 ;; TODO remove deprecation
                  (when (eq affe-highlight-function 'orderless-highlight-matches)
                    (message "`affe-highlight-function' should be set to `orderless--highlight', see README")
                    (setq affe-highlight-function 'orderless--highlight))
