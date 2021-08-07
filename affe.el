@@ -52,24 +52,8 @@
   "Grep command."
   :type 'string)
 
-(defcustom affe-regexp-function #'affe-default-regexp
-  "Transformation function from input string to list of regexps."
-  :type 'function)
-
-(defcustom affe-highlight-function #'consult--highlight-regexps
-  "Highlighting function taking the list of regexps and a match."
-  :type 'function)
-
 (defvar affe--grep-history nil)
 (defvar affe--find-history nil)
-
-(defun affe-default-regexp (pattern)
-  "Transformation function, which splits PATTERN at spaces and treats each word as a regexp."
-  (mapcan (lambda (word)
-            (condition-case nil
-                (progn (string-match-p word "") (list word))
-              (invalid-regexp nil)))
-          (split-string pattern nil t)))
 
 (defun affe--connect (name callback)
   "Send EXPR to server NAME and call CALLBACK with result."
@@ -121,7 +105,7 @@ See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
   "Create asynchrous completion function from ASYNC.
 CMD is the backend command.
 REGEXP is the regexp which restricts the substring to match against."
-  (let* ((proc) (last-regexps)
+  (let* (proc regexps highlight
          (indicator) (indicator-total 0) (indicator-done) (indicator-active)
          (backend (or (locate-library "affe-backend")
                       (error "Could not locate the library `affe-backend.el'")))
@@ -139,14 +123,9 @@ REGEXP is the regexp which restricts the substring to match against."
                 (`(search ,active)
                  (setq indicator-active active))
                 (`(match ,prefix ,match ,suffix)
-                 ;; TODO remove deprecation
-                 (when (eq affe-highlight-function 'orderless-highlight-matches)
-                   (message "`affe-highlight-function' should be set to `orderless--highlight', see README")
-                   (setq affe-highlight-function 'orderless--highlight))
-                 (funcall async (list
-                                 (concat prefix
-                                         (funcall affe-highlight-function last-regexps match)
-                                         suffix))))))
+                 (when highlight
+                   (funcall highlight match))
+                 (funcall async (list (concat prefix match suffix))))))
             (overlay-put indicator 'display
                          (format " (total=%s%s)%s"
                                  (cond
@@ -160,10 +139,11 @@ REGEXP is the regexp which restricts the substring to match against."
     (lambda (action)
       (pcase action
         ((pred stringp)
-         (let ((regexps (funcall affe-regexp-function action)))
-           (unless (or (not regexps) (equal regexps last-regexps))
-             (setq last-regexps regexps)
-             (affe--send proc `(search ,affe-count ,@regexps)))))
+         (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler action 'emacs)))
+           (unless (or (not re) (equal re regexps))
+             (setq regexps re
+                   highlight hl)
+             (affe--send proc `(search ,affe-count ,@re)))))
         ('destroy
          (affe--send proc 'exit)
          (funcall async 'destroy)
@@ -210,20 +190,19 @@ ARGS are passed to `consult--read'."
 (defun affe-grep (&optional dir initial)
   "Fuzzy grep in DIR with optional INITIAL input."
   (interactive "P")
-  (let ((config (list :match consult--grep-match-regexp)))
-    (affe--read
-     "Fuzzy grep" dir
-     (thread-first (consult--async-sink)
-       (consult--async-refresh-timer 0.05)
-       (consult--grep-format config)
-       (affe--async affe-grep-command "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'"))
-     :initial initial
-     :history '(:input affe--grep-history)
-     :category 'consult-grep
-     :add-history (thing-at-point 'symbol)
-     :lookup #'consult--lookup-cdr
-     :group #'consult--grep-group
-     :state (consult--grep-state config))))
+  (affe--read
+   "Fuzzy grep" dir
+   (thread-first (consult--async-sink)
+     (consult--async-refresh-timer 0.05)
+     (consult--grep-format nil)
+     (affe--async affe-grep-command "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'"))
+   :initial initial
+   :history '(:input affe--grep-history)
+   :category 'consult-grep
+   :add-history (thing-at-point 'symbol)
+   :lookup #'consult--lookup-cdr
+   :group #'consult--grep-group
+   :state (consult--grep-state)))
 
 ;;;###autoload
 (defun affe-find (&optional dir initial)

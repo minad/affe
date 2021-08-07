@@ -33,24 +33,10 @@ Configuration without Orderless:
     (consult-customize affe-grep :preview-key (kbd "M-.")))
 #+end_src
 
-The default regular expression transformation is limited. It is recommended to
-use [[https://github.com/oantolin/orderless][Orderless]] as pattern compiler for the filter expressions.
-
-Configuration with Orderless:
-#+begin_src emacs-lisp
-  (use-package affe
-    :after orderless
-    :config
-    ;; Configure Orderless
-    (setq affe-regexp-function #'orderless-pattern-compiler
-          affe-highlight-function #'orderless--highlight)
-
-    ;; Manual preview key for `affe-grep'
-    (consult-customize affe-grep :preview-key (kbd "M-.")))
-#+end_src
-
-Affe requires the ~find~ and ~ripgrep~ command line programs to be available.
-The producer processes can be customized by adjusting the variables
+The default regular expression transformation of Consult is limited. It is
+recommended to configure [[https://github.com/oantolin/orderless][Orderless]] as =consult--regexp-compiler= in Consult. Affe
+requires the ~find~ and ~ripgrep~ command line programs to be available. The
+producer processes can be customized by adjusting the variables
 ~affe-find-command~ and ~affe-grep-command~.
 
 * Available commands
