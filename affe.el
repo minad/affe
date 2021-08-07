@@ -140,6 +140,7 @@ REGEXP is the regexp which restricts the substring to match against."
       (pcase action
         ((pred stringp)
          (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler action 'emacs)))
+           (setq re (seq-filter #'consult--valid-regexp-p re))
            (unless (or (not re) (equal re regexps))
              (setq regexps re
                    highlight hl)
