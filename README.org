@@ -33,15 +33,14 @@ should be set for ~affe-grep~.
 #+end_src
 
 The default regular expression transformation of Consult is limited. It is
-recommended to configure [[https://github.com/oantolin/orderless][Orderless]] as =consult--regexp-compiler= in Consult.
+recommended to configure [[https://github.com/oantolin/orderless][Orderless]] as =affe-regexp-compiler= in Consult.
 
 #+begin_src emacs-lisp
-  (defun consult--orderless-regexp-compiler (input type &rest _config)
+  ;; -*- lexical-binding: t -*-
+  (defun affe-orderless-regexp-compiler (input _type)
     (setq input (orderless-pattern-compiler input))
-    (cons
-     (mapcar (lambda (r) (consult--convert-regexp r type)) input)
-     (lambda (str) (orderless--highlight input str))))
-  (setq consult--regexp-compiler #'consult--orderless-regexp-compiler)
+    (cons input (lambda (str) (orderless--highlight input str))))
+  (setq affe-regexp-compiler #'affe-orderless-regexp-compiler)
 #+end_src
 
 Affe requires the ~find~ and ~ripgrep~ command line programs to be available. The

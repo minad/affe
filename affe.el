@@ -52,6 +52,11 @@
   "Grep command."
   :type 'string)
 
+(defcustom affe-regexp-compiler
+  consult--regexp-compiler
+  "Affe regular expression compiler."
+  :type 'function)
+
 (defvar affe--grep-history nil)
 (defvar affe--find-history nil)
 
@@ -139,7 +144,7 @@ REGEXP is the regexp which restricts the substring to match against."
     (lambda (action)
       (pcase action
         ((pred stringp)
-         (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler action 'emacs)))
+         (pcase-let ((`(,re . ,hl) (funcall affe-regexp-compiler action 'emacs)))
            (setq re (seq-filter #'consult--valid-regexp-p re))
            (unless (or (not re) (equal re regexps))
              (setq regexps re
