@@ -91,21 +91,6 @@
    (let ((print-escape-newlines t))
      (concat (prin1-to-string expr) "\n"))))
 
-(defun affe--passthrough-all-completions (_str table pred _point)
-  "Passthrough completion function.
-See `completion-all-completions' for the arguments STR, TABLE, PRED and POINT."
-  (let ((completion-regexp-list))
-    (all-completions "" table pred)))
-
-(defun affe--passthrough-try-completion (str table pred _point)
-  "Passthrough completion function.
-See `completion-try-completion' for the arguments STR, TABLE, PRED and POINT."
-  (let ((completion-regexp-list)
-        (completion (try-completion str table pred)))
-    (if (stringp completion)
-        (cons completion (length completion))
-      completion)))
-
 (defun affe--async (async cmd &optional regexp)
   "Create asynchrous completion function from ASYNC.
 CMD is the backend command.
@@ -158,16 +143,6 @@ REGEXP is the regexp which restricts the substring to match against."
          (setq indicator (make-overlay (- (minibuffer-prompt-end) 2)
                                        (- (minibuffer-prompt-end) 1)))
          (funcall async 'setup)
-         (setq-local completion-styles-alist
-                     (cons
-                      (list 'affe--passthrough
-                            #'affe--passthrough-try-completion
-                            #'affe--passthrough-all-completions
-                            "")
-                      completion-styles-alist)
-                     completion-styles '(affe--passthrough)
-                     completion-category-defaults nil
-                     completion-category-overrides nil)
          (call-process
           (file-truename
            (expand-file-name invocation-name
@@ -201,7 +176,8 @@ ARGS are passed to `consult--read'."
    (thread-first (consult--async-sink)
      (consult--async-refresh-timer 0.05)
      (consult--grep-format nil)
-     (affe--async affe-grep-command "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'"))
+     (affe--async affe-grep-command "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'")
+     (consult--async-split #'consult--split-nil))
    :initial initial
    :history '(:input affe--grep-history)
    :category 'consult-grep
@@ -219,7 +195,8 @@ ARGS are passed to `consult--read'."
    (thread-first (consult--async-sink)
      (consult--async-refresh-timer 0.05)
      (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
-     (affe--async affe-find-command))
+     (affe--async affe-find-command)
+     (consult--async-split #'consult--split-nil))
    :history '(:input affe--find-history)
    :initial initial
    :category 'file
