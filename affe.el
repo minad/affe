@@ -182,7 +182,7 @@ ARGS are passed to `consult--read'."
    :history '(:input affe--grep-history)
    :category 'consult-grep
    :add-history (thing-at-point 'symbol)
-   :lookup #'consult--lookup-cdr
+   :lookup #'consult--lookup-member
    :group #'consult--grep-group
    :state (consult--grep-state)))
 
