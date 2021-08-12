@@ -51,7 +51,7 @@
 
 (defun affe-backend--producer-filter (_ out)
   "Process filter for the producer process receiving OUT string."
-  (let ((lines (split-string out "\n")))
+  (let ((lines (split-string out "[\r\n]+")))
     (if (not (cdr lines))
         (setq affe-backend--producer-rest (concat affe-backend--producer-rest (car lines)))
       (setcar lines (concat affe-backend--producer-rest (car lines)))
