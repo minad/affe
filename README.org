@@ -15,9 +15,9 @@ This package provides an asynchronous fuzzy finder similar to the [[https://gith
 command-line fuzzy finder]], written in pure Elisp. A producer process is started
 in the background, e.g., ~find~, ~fd~ or ~ripgrep~. The output produced by this
 process is filtered by an external asynchronous Emacs process. The Emacs UI
-always stays responsive since the work is completely off-loaded to other
-processes. The results are presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which
-allows to quickly select from the available items.
+always stays responsive since the work is off-loaded to other processes. The
+results are presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which allows to quickly
+select from the available items.
 
 * Installation and Configuration
 
@@ -54,14 +54,13 @@ producer processes can be customized by adjusting the variables
 
 * Related packages
 
-Affe depends on Consult and works best with the Selectrum or Vertico completion
-UIs.
+Affe depends on Consult and works best with the Vertico completion UI.
 
-- [[https://github.com/minad/consult][Consult]]: Many useful search and navigation commands (Dependency of Affe).
+- [[https://github.com/minad/consult][Consult]]: Useful search and navigation commands (Dependency of Affe).
 - [[https://github.com/minad/marginalia][Marginalia]]: File annotations in the minibuffer.
 - [[https://github.com/oantolin/embark][Embark]]: Minibuffer actions on files.
 - [[https://github.com/oantolin/orderless][Orderless]]: Advanced completion style, can be plugged together with Affe.
-- [[https://github.com/raxod502/selectrum][Selectrum]], [[https://github.com/minad/vertico][Vertico]] or [[https://github.com/oantolin/icomplete-vertical][Icomplete-vertical]]: Vertical completion systems
+- [[https://github.com/minad/vertico][Vertico]], [[https://github.com/raxod502/selectrum][Selectrum]] or [[https://github.com/oantolin/icomplete-vertical][Icomplete-vertical]]: Vertical completion systems
   (Icomplete-vertical is only needed for Emacs 27, built-in on Emacs 28)
 
 * Details

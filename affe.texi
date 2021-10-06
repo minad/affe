@@ -27,9 +27,9 @@ This package provides an asynchronous fuzzy finder similar to the @uref{https://
 command-line fuzzy finder}, written in pure Elisp. A producer process is started
 in the background, e.g., @code{find}, @code{fd} or @code{ripgrep}. The output produced by this
 process is filtered by an external asynchronous Emacs process. The Emacs UI
-always stays responsive since the work is completely off-loaded to other
-processes. The results are presented in the minibuffer using @uref{https://github.com/minad/consult, Consult}, which
-allows to quickly select from the available items.
+always stays responsive since the work is off-loaded to other processes. The
+results are presented in the minibuffer using @uref{https://github.com/minad/consult, Consult}, which allows to quickly
+select from the available items.
 @end ifnottex
 
 @menu
@@ -44,24 +44,29 @@ allows to quickly select from the available items.
 @chapter Installation and Configuration
 
 The package is available on MELPA and can be installed using the Emacs package
-manager. The default regular expression transformation is limited. It is
-recommended to use @uref{https://github.com/oantolin/orderless, Orderless} as pattern compiler for the filter expressions.
-Furthermore a manual preview key should be set for @code{affe-grep}.
+manager. If files should not be automatically previewed, a manual preview key
+should be set for @code{affe-grep}.
 
 @lisp
 (use-package affe
-  :after orderless
   :config
-  ;; Configure Orderless
-  (setq affe-regexp-function #'orderless-pattern-compiler
-        affe-highlight-function #'orderless-highlight-matches)
-
   ;; Manual preview key for `affe-grep'
   (consult-customize affe-grep :preview-key (kbd "M-.")))
 @end lisp
 
-Affe requires the @code{find} and @code{ripgrep} command line programs to be available.
-The producer processes can be customized by adjusting the variables
+The default regular expression transformation of Consult is limited. It is
+recommended to configure @uref{https://github.com/oantolin/orderless, Orderless} as @samp{affe-regexp-compiler} in Consult.
+
+@lisp
+;; -*- lexical-binding: t -*-
+(defun affe-orderless-regexp-compiler (input _type)
+  (setq input (orderless-pattern-compiler input))
+  (cons input (lambda (str) (orderless--highlight input str))))
+(setq affe-regexp-compiler #'affe-orderless-regexp-compiler)
+@end lisp
+
+Affe requires the @code{find} and @code{ripgrep} command line programs to be available. The
+producer processes can be customized by adjusting the variables
 @code{affe-find-command} and @code{affe-grep-command}.
 
 @node Available commands
@@ -77,12 +82,11 @@ The producer processes can be customized by adjusting the variables
 @node Related packages
 @chapter Related packages
 
-Affe depends on Consult and works best with the Selectrum or Vertico completion
-UIs.
+Affe depends on Consult and works best with the Vertico completion UI@.
 
 @itemize
 @item
-@uref{https://github.com/minad/consult, Consult}: Many useful search and navigation commands (Dependency of Affe).
+@uref{https://github.com/minad/consult, Consult}: Useful search and navigation commands (Dependency of Affe).
 @item
 @uref{https://github.com/minad/marginalia, Marginalia}: File annotations in the minibuffer.
 @item
@@ -90,7 +94,7 @@ UIs.
 @item
 @uref{https://github.com/oantolin/orderless, Orderless}: Advanced completion style, can be plugged together with Affe.
 @item
-@uref{https://github.com/raxod502/selectrum, Selectrum}, @uref{https://github.com/minad/vertico, Vertico} or @uref{https://github.com/oantolin/icomplete-vertical, Icomplete-vertical}: Vertical completion systems
+@uref{https://github.com/minad/vertico, Vertico}, @uref{https://github.com/raxod502/selectrum, Selectrum} or @uref{https://github.com/oantolin/icomplete-vertical, Icomplete-vertical}: Vertical completion systems
 (Icomplete-vertical is only needed for Emacs 27, built-in on Emacs 28)
 @end itemize
 
