@@ -4,8 +4,8 @@
 ;; Maintainer: Daniel Mendler
 ;; Created: 2021
 ;; License: GPL-3.0-or-later
-;; Version: 0.2
-;; Package-Requires: ((emacs "27.1") (consult "0.10"))
+;; Version: 0.3
+;; Package-Requires: ((emacs "27.1") (consult "0.12"))
 ;; Homepage: https://github.com/minad/affe
 
 ;; This file is not part of GNU Emacs.
