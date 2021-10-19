@@ -45,6 +45,7 @@
 (defcustom affe-find-command
   (cond
    ((executable-find "fd") "fd --color=never --type f")
+   ((executable-find "rg") "rg --color=never --files")
    ((executable-find "find") "find -not ( -wholename */.* -prune ) -type f"))
   "Find file command."
   :type 'string)
