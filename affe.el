@@ -43,7 +43,9 @@
   :type 'integer)
 
 (defcustom affe-find-command
-  "find -not ( -wholename */.* -prune ) -type f"
+  (cond
+   ((executable-find "fd") "fd --type f")
+   ((executable-find "find") "find -not ( -wholename */.* -prune ) -type f"))
   "Find file command."
   :type 'string)
 
