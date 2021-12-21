@@ -44,16 +44,15 @@
 
 (defcustom affe-find-command
   (cond
-   ((executable-find "fd") "fd --color=never --type f")
    ((executable-find "rg") "rg --color=never --files")
-   ((executable-find "find") "find -not ( -wholename */.* -prune ) -type f"))
+   (t "find -not ( -wholename */.* -prune ) -type f"))
   "Find file command."
   :type 'string)
 
 (defcustom affe-grep-command
   (cond
-   ((executable-find "rg") "rg --null --max-columns=1000 --no-heading --line-number -v ^$ .")
-   ((executable-find "grep") "grep -I -r --exclude=.* --exclude-dir=.* --null --color=never --line-number -v ^$"))
+   ((executable-find "rg") "rg --null --color=never --max-columns=1000 --no-heading --line-number -v ^$ .")
+   (t "grep -I -r --exclude=.* --exclude-dir=.* --null --color=never --line-number -v ^$"))
   "Grep command."
   :type 'string)
 
