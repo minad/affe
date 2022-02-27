@@ -38,7 +38,7 @@ recommended to configure [[https://github.com/oantolin/orderless][Orderless]] as
 
 #+begin_src emacs-lisp
   ;; -*- lexical-binding: t -*-
-  (defun affe-orderless-regexp-compiler (input _type)
+  (defun affe-orderless-regexp-compiler (input _type _ignorecase)
     (setq input (orderless-pattern-compiler input))
     (cons input (lambda (str) (orderless--highlight input str))))
   (setq affe-regexp-compiler #'affe-orderless-regexp-compiler)

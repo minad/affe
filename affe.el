@@ -133,7 +133,7 @@ REGEXP is the regexp which restricts the substring to match against."
     (lambda (action)
       (pcase action
         ((pred stringp)
-         (pcase-let ((`(,re . ,hl) (funcall affe-regexp-compiler action 'emacs)))
+         (pcase-let ((`(,re . ,hl) (funcall affe-regexp-compiler action 'emacs nil)))
            (setq re (seq-filter #'consult--valid-regexp-p re))
            (unless (or (not re) (equal re regexps))
              (setq regexps re
