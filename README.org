@@ -14,11 +14,11 @@
 
 This package provides an asynchronous fuzzy finder similar to the [[https://github.com/junegunn/fzf][fzf
 command-line fuzzy finder]], written in pure Elisp. A producer process is started
-in the background, e.g., ~find~, ~fd~ or ~ripgrep~. The output produced by this
-process is filtered by an external asynchronous Emacs process. The Emacs UI
-always stays responsive since the work is off-loaded to other processes. The
-results are presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which allows to quickly
-select from the available items.
+in the background, e.g., ~find~ or ~grep~. The output produced by this process is
+filtered by an external asynchronous Emacs process. The Emacs UI always stays
+responsive since the work is off-loaded to other processes. The results are
+presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which allows to quickly select from
+the available items.
 
 * Installation and Configuration
 
@@ -44,9 +44,10 @@ recommended to configure [[https://github.com/oantolin/orderless][Orderless]] as
   (setq affe-regexp-compiler #'affe-orderless-regexp-compiler)
 #+end_src
 
-Affe requires the ~find~ and ~rg~ ("ripgrep") command line programs to be available. The
-producer processes can be customized by adjusting the variables
-~affe-find-command~ and ~affe-grep-command~.
+Affe requires the ~rg~ ("ripgrep") command line program to be available for best
+performance. If ~rg~ is not available, the usual Posix ~find~ and ~grep~ utilities are
+used instead. The producer processes can be customized by adjusting the
+variables ~affe-find-command~ and ~affe-grep-command~.
 
 * Available commands
 
