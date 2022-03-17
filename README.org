@@ -56,14 +56,14 @@ variables ~affe-find-command~ and ~affe-grep-command~.
 
 * Related packages
 
-Affe depends on Consult and works best with the Vertico completion UI.
+Affe depends on Consult and works best with the Vertico and the Mct completion
+UIs.
 
 - [[https://github.com/minad/consult][Consult]]: Useful search and navigation commands (Dependency of Affe).
 - [[https://github.com/minad/marginalia][Marginalia]]: File annotations in the minibuffer.
 - [[https://github.com/oantolin/embark][Embark]]: Minibuffer actions on files.
 - [[https://github.com/oantolin/orderless][Orderless]]: Advanced completion style, can be plugged together with Affe.
-- [[https://github.com/minad/vertico][Vertico]], [[https://github.com/raxod502/selectrum][Selectrum]] or [[https://github.com/oantolin/icomplete-vertical][Icomplete-vertical]]: Vertical completion systems
-  (Icomplete-vertical is only needed for Emacs 27, built-in on Emacs 28)
+- [[https://github.com/minad/vertico][Vertico]] or [[https://gitlab.com/protesilaos/mct][Mct]]: Vertical completion systems
 
 * Details
 
@@ -94,7 +94,7 @@ Emacs is a game changer here?
 
 * Alternatives
 
+- [[https://github.com/minad/consult][consult-grep/consult-find]]: Perform the filtering in the frontend.
+- [[https://github.com/abo-abo/swiper][counsel-fzf]]: Ivy-specific, restarts find+fzf when updating the input pattern.
 - [[https://github.com/bling/fzf.el][fzf.el]]: Runs the fzf command line program in an Emacs terminal
 - [[https://github.com/10sr/fuzzy-finder-el][fuzzy-finder.el]]: Similar to fzf.el
-- [[https://github.com/abo-abo/swiper][counsel-fzf]]: Ivy-specific, restarts find+fzf when updating the input pattern.
-- [[https://github.com/minad/consult][consult-grep/consult-find]]: Perform the filtering in the frontend.
