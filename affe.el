@@ -206,7 +206,7 @@ ARGS are passed to `consult--read'."
    :category 'file
    :add-history (thing-at-point 'filename)
    :state (lambda (action cand)
-            (when (and cand (eq action 'finish))
+            (when (and cand (eq action 'return))
               (find-file cand)))))
 
 (provide 'affe)
