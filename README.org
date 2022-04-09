@@ -63,7 +63,7 @@ UIs.
 - [[https://github.com/minad/marginalia][Marginalia]]: File annotations in the minibuffer.
 - [[https://github.com/oantolin/embark][Embark]]: Minibuffer actions on files.
 - [[https://github.com/oantolin/orderless][Orderless]]: Advanced completion style, can be plugged together with Affe.
-- [[https://github.com/minad/vertico][Vertico]] or [[https://gitlab.com/protesilaos/mct][Mct]]: Vertical completion systems
+- [[https://github.com/minad/vertico][Vertico]] or [[https://git.sr.ht/~protesilaos/mct][Mct]]: Vertical completion systems
 
 * Details
 
