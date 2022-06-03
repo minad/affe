@@ -169,7 +169,8 @@ ARGS are passed to `consult--read'."
     (apply #'consult--read
            `(,@args :prompt ,(car prompt-dir)
                     :sort nil
-                    :require-match t))))
+                    :require-match t
+                    :state ,(consult--grep-state)))))
 
 ;;;###autoload
 (defun affe-grep (&optional dir initial)
@@ -187,8 +188,7 @@ ARGS are passed to `consult--read'."
    :category 'consult-grep
    :add-history (thing-at-point 'symbol)
    :lookup #'consult--lookup-member
-   :group #'consult--grep-group
-   :state (consult--grep-state)))
+   :group #'consult--grep-group))
 
 ;;;###autoload
 (defun affe-find (&optional dir initial)
