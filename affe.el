@@ -161,15 +161,16 @@ REGEXP is the regexp which restricts the substring to match against."
          (affe--send proc `(search ,affe-count)))
         (_ (funcall async action))))))
 
-(defun affe--read (prompt dir &rest args)
+(defmacro affe--read (prompt dir &rest args)
   "Asynchronous selection function with PROMPT in DIR.
 ARGS are passed to `consult--read'."
-  (let* ((prompt-dir (consult--directory-prompt prompt dir))
-         (default-directory (cdr prompt-dir)))
-    (apply #'consult--read
-           `(,@args :prompt ,(car prompt-dir)
-                    :sort nil
-                    :require-match t))))
+  `(let* ((prompt-dir (consult--directory-prompt ,prompt ,dir))
+          (default-directory (cdr prompt-dir)))
+     (consult--read
+      ,@args
+      :prompt (car prompt-dir)
+      :sort nil
+      :require-match t)))
 
 ;;;###autoload
 (defun affe-grep (&optional dir initial)
