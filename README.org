@@ -20,6 +20,8 @@ responsive since the work is off-loaded to other processes. The results are
 presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which allows to quickly select from
 the available items.
 
+#+toc: headlines 8
+
 * Installation and Configuration
 
 The package is available on MELPA and can be installed using the Emacs package
