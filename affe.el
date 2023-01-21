@@ -38,6 +38,7 @@
 (defgroup affe nil
   "Asynchronous Fuzzy Finder for Emacs."
   :link '(url-link :tag "Homepage" "https://github.com/minad/affe")
+  :link '(emacs-library-link :tag "Library Source" "affe.el")
   :group 'files
   :group 'minibuffer
   :prefix "affe-")
