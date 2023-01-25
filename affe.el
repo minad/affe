@@ -193,7 +193,7 @@ ARGS are passed to `consult--read'."
    :category 'consult-grep
    :add-history (thing-at-point 'symbol)
    :lookup #'consult--lookup-member
-   :group #'consult--grep-group
+   :group #'consult--prefix-group
    :state (consult--grep-state)))
 
 ;;;###autoload
