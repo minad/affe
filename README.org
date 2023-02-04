@@ -32,7 +32,7 @@ should be set for ~affe-grep~.
   (use-package affe
     :config
     ;; Manual preview key for `affe-grep'
-    (consult-customize affe-grep :preview-key (kbd "M-.")))
+    (consult-customize affe-grep :preview-key "M-."))
 #+end_src
 
 The default regular expression transformation of Consult is limited. It is
