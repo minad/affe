@@ -7,7 +7,7 @@
 ;; Created: 2021
 ;; License: GPL-3.0-or-later
 ;; Version: 0.5
-;; Package-Requires: ((emacs "27.1") (consult "0.20"))
+;; Package-Requires: ((emacs "27.1") (consult "0.32"))
 ;; Homepage: https://github.com/minad/affe
 
 ;; This file is not part of GNU Emacs.
