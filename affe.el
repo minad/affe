@@ -2,10 +2,10 @@
 
 ;; Copyright (C) 2021-2023 Daniel Mendler
 
-;; Author: Daniel Mendler
-;; Maintainer: Daniel Mendler
+;; Author: Daniel Mendler <mail@daniel-mendler.de>
+;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
+;; SPDX-License-Identifier: GPL-3.0-or-later
 ;; Created: 2021
-;; License: GPL-3.0-or-later
 ;; Version: 0.5
 ;; Package-Requires: ((emacs "27.1") (consult "0.32"))
 ;; Homepage: https://github.com/minad/affe
