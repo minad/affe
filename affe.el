@@ -50,13 +50,13 @@
 (defcustom affe-find-command
   (cond
    ((executable-find "rg") "rg --color=never --files")
-   (t "find -not ( -wholename */.* -prune ) -type f"))
+   (t "find . -not ( -wholename */.* -prune ) -type f"))
   "Find file command."
   :type 'string)
 
 (defcustom affe-grep-command
   (cond
-   ((executable-find "rg") "rg --null --color=never --max-columns=1000 --no-heading --line-number -v ^$ .")
+   ((executable-find "rg") "rg --null --color=never --max-columns=1000 --no-heading --line-number -v ^$")
    (t "grep -I -r --exclude=.* --exclude-dir=.* --null --color=never --line-number -v ^$"))
   "Grep command."
   :type 'string)
@@ -162,58 +162,64 @@ REGEXP is the regexp which restricts the substring to match against."
           (concat "--chdir=" default-directory)
           "-l" backend)
          (setq proc (affe--connect name callback))
-         (affe--send proc `(start ,regexp ,@(split-string-and-unquote cmd)))
+         (affe--send proc `(start ,regexp ,@cmd))
          (affe--send proc `(search ,affe-count)))
         (_ (funcall async action))))))
 
-(defmacro affe--read (prompt dir &rest args)
-  "Asynchronous selection function with PROMPT in DIR.
-ARGS are passed to `consult--read'."
-  `(let* ((prompt-dir (consult--directory-prompt ,prompt ,dir))
-          (default-directory (cdr prompt-dir)))
-     (consult--read
-      ,@args
-      :prompt (car prompt-dir)
-      :sort nil
-      :require-match t)))
+(defun affe--command (cmd paths)
+  "Build command line argument list from CMD string and PATHS."
+  (setq cmd (split-string-and-unquote cmd))
+  (if (member "." cmd)
+      (mapcan (lambda (x) (if (equal x ".") paths (list x))) cmd)
+    (append cmd paths)))
 
 ;;;###autoload
 (defun affe-grep (&optional dir initial)
   "Fuzzy grep in DIR with optional INITIAL input."
   (interactive "P")
-  (affe--read
-   "Fuzzy grep" dir
-   (thread-first (consult--async-sink)
-     (consult--async-refresh-timer 0.05)
-     (consult--grep-format nil)
-     (affe--async affe-grep-command "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'")
-     (consult--async-split #'consult--split-nil))
-   :initial initial
-   :history '(:input affe--grep-history)
-   :category 'consult-grep
-   :add-history (thing-at-point 'symbol)
-   :lookup #'consult--lookup-member
-   :group #'consult--prefix-group
-   :state (consult--grep-state)))
+  (pcase-let* ((`(,prompt ,paths ,dir) (consult--directory-prompt "Fuzzy grep" dir))
+               (default-directory dir))
+    (consult--read
+     (thread-first (consult--async-sink)
+       (consult--async-refresh-timer 0.05)
+       (consult--grep-format nil)
+       (affe--async
+        (affe--command affe-grep-command paths)
+        "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'")
+       (consult--async-split #'consult--split-nil))
+     :prompt prompt
+     :sort nil
+     :require-match t
+     :initial initial
+     :history '(:input affe--grep-history)
+     :category 'consult-grep
+     :add-history (thing-at-point 'symbol)
+     :lookup #'consult--lookup-member
+     :group #'consult--prefix-group
+     :state (consult--grep-state))))
 
 ;;;###autoload
 (defun affe-find (&optional dir initial)
   "Fuzzy find in DIR with optional INITIAL input."
   (interactive "P")
-  (affe--read
-   "Fuzzy find" dir
-   (thread-first (consult--async-sink)
-     (consult--async-refresh-timer 0.05)
-     (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
-     (affe--async affe-find-command)
-     (consult--async-split #'consult--split-nil))
-   :history '(:input affe--find-history)
-   :initial initial
-   :category 'file
-   :add-history (thing-at-point 'filename)
-   :state (lambda (action cand)
-            (when (and cand (eq action 'return))
-              (find-file cand)))))
+  (pcase-let* ((`(,prompt ,paths ,dir) (consult--directory-prompt "Fuzzy find" dir))
+               (default-directory dir))
+    (consult--read
+     (thread-first (consult--async-sink)
+       (consult--async-refresh-timer 0.05)
+       (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
+       (affe--async (affe--command affe-find-command paths))
+       (consult--async-split #'consult--split-nil))
+     :prompt prompt
+     :sort nil
+     :require-match t
+     :history '(:input affe--find-history)
+     :initial initial
+     :category 'file
+     :add-history (thing-at-point 'filename)
+     :state (lambda (action cand)
+              (when (and cand (eq action 'return))
+                (find-file cand))))))
 
 (provide 'affe)
 ;;; affe.el ends here
