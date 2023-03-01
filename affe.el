@@ -170,7 +170,7 @@ REGEXP is the regexp which restricts the substring to match against."
   "Build command line argument list from CMD string and PATHS."
   (setq cmd (split-string-and-unquote cmd))
   (if (member "." cmd)
-      (mapcan (lambda (x) (if (equal x ".") paths (list x))) cmd)
+      (seq-mapcat (lambda (x) (if (equal x ".") paths (list x))) cmd)
     (append cmd paths)))
 
 ;;;###autoload
