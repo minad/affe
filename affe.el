@@ -45,7 +45,7 @@
 
 (defcustom affe-count 20
   "Number of matches the backend should return."
-  :type 'integer)
+  :type 'natnum)
 
 (defcustom affe-find-command
   (cond
