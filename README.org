@@ -46,10 +46,9 @@ recommended to configure [[https://github.com/oantolin/orderless][Orderless]] as
   (setq affe-regexp-compiler #'affe-orderless-regexp-compiler)
 #+end_src
 
-Affe requires the ~rg~ ("ripgrep") command line program to be available for best
-performance. If ~rg~ is not available, the usual Posix ~find~ and ~grep~ utilities are
-used instead. The producer processes can be customized by adjusting the
-variables ~affe-find-command~ and ~affe-grep-command~.
+Affe requires the ~rg~ ("ripgrep") command line program to be available. The
+producer processes can be customized by adjusting the variables
+~affe-find-command~ and ~affe-grep-command~.
 
 * Available commands
 

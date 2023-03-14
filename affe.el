@@ -48,16 +48,12 @@
   :type 'natnum)
 
 (defcustom affe-find-command
-  (cond
-   ((executable-find "rg") "rg --color=never --files")
-   (t "find . -not ( -wholename */.* -prune ) -type f"))
+  "rg --color=never --files"
   "Find file command."
   :type 'string)
 
 (defcustom affe-grep-command
-  (cond
-   ((executable-find "rg") "rg --null --color=never --max-columns=1000 --no-heading --line-number -v ^$")
-   (t "grep -I -r --exclude=.* --exclude-dir=.* --null --color=never --line-number -v ^$"))
+  "rg --null --color=never --max-columns=1000 --no-heading --line-number -v ^$"
   "Grep command."
   :type 'string)
 
