@@ -13,12 +13,16 @@
 #+html: <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Lar_Gibbon_%2846946767992%29.jpg/1920px-Lar_Gibbon_%2846946767992%29.jpg" align="right" width="40%">
 
 This package provides an asynchronous fuzzy finder similar to the [[https://github.com/junegunn/fzf][fzf
-command-line fuzzy finder]], written in pure Elisp. A producer process is started
-in the background, e.g., ~find~ or ~grep~. The output produced by this process is
-filtered by an external asynchronous Emacs process. The Emacs UI always stays
-responsive since the work is off-loaded to other processes. The results are
-presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which allows to quickly select from
-the available items.
+command-line fuzzy finder]], written in pure Elisp. A producer process is
+started in the background, e.g., ~find~ or ~grep~. The output produced by this
+process is filtered by an external asynchronous Emacs process. The Emacs UI
+always stays responsive since the work is off-loaded to other processes. The
+results are presented in the minibuffer using [[https://github.com/minad/consult][Consult]], which allows to quickly
+select from the available items. Note that Affe is an experimental package and a
+demonstrator of asynchronous processing outside of Emacs in a separate process.
+Generally I recommend to use =consult-grep= or =consult-ripgrep=, since these
+commands will perform better for large projects. The Consult package itself is
+more mature.
 
 #+toc: headlines 8
 
