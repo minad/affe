@@ -43,10 +43,9 @@ The default regular expression transformation of Consult is limited. It is
 recommended to configure [[https://github.com/oantolin/orderless][Orderless]] as =affe-regexp-compiler= in Consult.
 
 #+begin_src emacs-lisp
-  ;; -*- lexical-binding: t -*-
   (defun affe-orderless-regexp-compiler (input _type _ignorecase)
     (setq input (orderless-pattern-compiler input))
-    (cons input (lambda (str) (orderless--highlight input str))))
+    (cons input (apply-partially #'orderless--highlight input)))
   (setq affe-regexp-compiler #'affe-orderless-regexp-compiler)
 #+end_src
 
