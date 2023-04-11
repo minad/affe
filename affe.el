@@ -9,7 +9,7 @@
 ;; Version: 0.7
 ;; Package-Requires: ((emacs "27.1") (consult "0.33"))
 ;; Homepage: https://github.com/minad/affe
-;; Keywords: matching, files
+;; Keywords: matching, files, completion
 
 ;; This file is not part of GNU Emacs.
 
