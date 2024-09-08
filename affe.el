@@ -7,7 +7,7 @@
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 ;; Created: 2021
 ;; Version: 0.8
-;; Package-Requires: ((emacs "27.1") (consult "1.7"))
+;; Package-Requires: ((emacs "28.1") (consult "1.7"))
 ;; Homepage: https://github.com/minad/affe
 ;; Keywords: matching, files, completion
 
@@ -98,7 +98,7 @@
      (concat (prin1-to-string expr) "\n"))))
 
 (defun affe--async (async cmd &optional regexp)
-  "Create asynchrous completion function from ASYNC.
+  "Create asynchronous completion function from ASYNC.
 CMD is the backend command.
 REGEXP is the regexp which restricts the substring to match against."
   (let* (proc regexps highlight
@@ -155,7 +155,7 @@ REGEXP is the regexp which restricts the substring to match against."
                              invocation-directory))
           nil nil nil "-Q"
           (concat "--daemon=" name)
-          ;; Invoking Emacs on Mac requires specifing the directory (See gh #3 and bug#48579).
+          ;; Invoking Emacs on Mac requires specifying the directory (See gh #3 and bug#48579).
           (concat "--chdir=" default-directory)
           "-l" backend)
          (setq proc (affe--connect name callback))
