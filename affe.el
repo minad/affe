@@ -8,7 +8,7 @@
 ;; Created: 2021
 ;; Version: 0.8
 ;; Package-Requires: ((emacs "28.1") (consult "1.7"))
-;; Homepage: https://github.com/minad/affe
+;; URL: https://github.com/minad/affe
 ;; Keywords: matching, files, completion
 
 ;; This file is not part of GNU Emacs.
@@ -38,7 +38,7 @@
 
 (defgroup affe nil
   "Asynchronous Fuzzy Finder for Emacs."
-  :link '(url-link :tag "Homepage" "https://github.com/minad/affe")
+  :link '(url-link :tag "Website" "https://github.com/minad/affe")
   :link '(emacs-library-link :tag "Library Source" "affe.el")
   :group 'files
   :group 'minibuffer
