@@ -1,6 +1,6 @@
 ;;; affe.el --- Asynchronous Fuzzy Finder for Emacs -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2024 Daniel Mendler
+;; Copyright (C) 2021-2025 Daniel Mendler
 
 ;; Author: Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
