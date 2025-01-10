@@ -112,14 +112,14 @@
         (pcase (read line)
           ('exit (kill-emacs))
           (`(search ,limit . ,regexps)
-             (affe-backend--append-producer)
-             (setq affe-backend--producer-head affe-backend--search-head
-                   affe-backend--producer-tail affe-backend--search-tail
-                   affe-backend--search-head (list nil)
-                   affe-backend--search-tail affe-backend--search-head
-                   affe-backend--search-limit limit
-                   affe-backend--search-found 0
-                   affe-backend--search-regexps regexps))
+           (affe-backend--append-producer)
+           (setq affe-backend--producer-head affe-backend--search-head
+                 affe-backend--producer-tail affe-backend--search-tail
+                 affe-backend--search-head (list nil)
+                 affe-backend--search-tail affe-backend--search-head
+                 affe-backend--search-limit limit
+                 affe-backend--search-found 0
+                 affe-backend--search-regexps regexps))
           (`(start ,regexp . ,cmd)
            (setq affe-backend--client client
                  affe-backend--restrict-regexp regexp)

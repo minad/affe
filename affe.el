@@ -97,71 +97,71 @@
    (let ((print-escape-newlines t))
      (concat (prin1-to-string expr) "\n"))))
 
-(defun affe--async (async cmd &optional regexp)
-  "Create asynchronous completion function from ASYNC.
+(defun affe--async (cmd &optional regexp)
+  "Create asynchronous completion function.
 CMD is the backend command.
 REGEXP is the regexp which restricts the substring to match against."
-  (let* (proc regexps highlight
-         (indicator) (indicator-total 0) (indicator-done) (indicator-active)
-         (backend (or (locate-library "affe-backend")
-                      (error "Could not locate the library `affe-backend.el'")))
-         (name (make-temp-name "affe-"))
-         (callback
-          (lambda (lines)
-            (dolist (line lines)
-              (pcase (read line)
-                (`(log ,msg)
-                 (with-current-buffer (get-buffer-create " *affe*")
-                   (insert msg)))
-                ('flush (funcall async 'flush))
-                (`(producer ,total ,done)
-                 (setq indicator-total total indicator-done done))
-                (`(search ,active)
-                 (setq indicator-active active))
-                (`(match ,prefix ,match ,suffix)
-                 (when highlight
-                   (funcall highlight match))
-                 (funcall async (list (concat prefix match suffix))))))
-            (overlay-put indicator 'display
-                         (format " (total=%s%s)%s"
-                                 (cond
-                                  ((> indicator-total 1e6) (format "%.1fM" (/ indicator-total 1000000.0)))
-                                  ((> indicator-total 1e3) (format "%.1fK" (/ indicator-total 1000.0)))
-                                  (t indicator-total))
-                                 (if indicator-done "" "+")
-                                 (if indicator-active (propertize ":" 'face
-                                                                  `(:foreground ,(face-attribute
-                                                                                  'error :foreground))) ":"))))))
-    (lambda (action)
-      (pcase action
-        ((pred stringp)
-         (pcase-let ((`(,re . ,hl) (funcall affe-regexp-compiler action 'emacs 'ignore-case)))
-           (setq re (seq-filter #'consult--valid-regexp-p re))
-           (unless (or (not re) (equal re regexps))
-             (setq regexps re
-                   highlight hl)
-             (affe--send proc `(search ,affe-count ,@re)))))
-        ('destroy
-         (affe--send proc 'exit)
-         (funcall async 'destroy)
-         (delete-overlay indicator))
-        ('setup
-         (setq indicator (make-overlay (- (minibuffer-prompt-end) 2)
-                                       (- (minibuffer-prompt-end) 1)))
-         (funcall async 'setup)
-         (call-process
-          (file-truename
-           (expand-file-name invocation-name
-                             invocation-directory))
-          nil nil nil "-Q"
-          (concat "--daemon=" name)
-          ;; Invoking Emacs on Mac requires specifying the directory (See gh #3 and bug#48579).
-          (concat "--chdir=" default-directory)
-          "-l" backend)
-         (setq proc (affe--connect name callback))
-         (affe--send proc `(start ,regexp ,@cmd))
-         (affe--send proc `(search ,affe-count)))
-        (_ (funcall async action))))))
+  (lambda (async)
+    (let* ((proc) (regexps) (highlight)
+           (indicator) (indicator-total 0) (indicator-done) (indicator-active)
+           (backend (or (locate-library "affe-backend")
+                        (error "Could not locate the library `affe-backend.el'")))
+           (name (make-temp-name "affe-"))
+           (callback
+            (lambda (lines)
+              (dolist (line lines)
+                (pcase (read line)
+                  (`(log ,msg)
+                   (with-current-buffer (get-buffer-create " *affe*")
+                     (insert msg)))
+                  ('flush (funcall async 'flush))
+                  (`(producer ,total ,done)
+                   (setq indicator-total total indicator-done done))
+                  (`(search ,active)
+                   (setq indicator-active active))
+                  (`(match ,prefix ,match ,suffix)
+                   (when highlight
+                     (funcall highlight match))
+                   (funcall async (list (concat prefix match suffix))))))
+              (overlay-put
+               indicator 'display
+               (format " (total=%s%s)%s"
+                       (cond
+                        ((> indicator-total 1e6) (format "%.1fM" (/ indicator-total 1000000.0)))
+                        ((> indicator-total 1e3) (format "%.1fK" (/ indicator-total 1000.0)))
+                        (t indicator-total))
+                       (if indicator-done "" "+")
+                       (if indicator-active (propertize ":" 'face
+                                                        `(:foreground ,(face-attribute
+                                                                        'error :foreground))) ":"))))))
+      (lambda (action)
+        (prog1 (funcall async action)
+          (pcase action
+            ((pred stringp)
+             (pcase-let ((`(,re . ,hl) (funcall affe-regexp-compiler action 'emacs 'ignore-case)))
+               (setq re (seq-filter #'consult--valid-regexp-p re))
+               (unless (or (not re) (equal re regexps))
+                 (setq regexps re
+                       highlight hl)
+                 (affe--send proc `(search ,affe-count ,@re)))))
+            ('destroy
+             (affe--send proc 'exit)
+             (delete-overlay indicator))
+            ('setup
+             (setq indicator (make-overlay (- (minibuffer-prompt-end) 2)
+                                           (- (minibuffer-prompt-end) 1)))
+             (call-process
+              (file-truename
+               (expand-file-name invocation-name
+                                 invocation-directory))
+              nil nil nil "-Q"
+              (concat "--daemon=" name)
+              ;; Invoking Emacs on Mac requires specifying the directory (See gh #3 and bug#48579).
+              (concat "--chdir=" default-directory)
+              "-l" backend)
+             (setq proc (affe--connect name callback))
+             (affe--send proc `(start ,regexp ,@cmd))
+             (affe--send proc `(search ,affe-count)))))))))
 
 (defun affe--command (cmd paths)
   "Build command line argument list from CMD string and PATHS."
@@ -177,13 +177,13 @@ REGEXP is the regexp which restricts the substring to match against."
   (pcase-let* ((`(,prompt ,paths ,dir) (consult--directory-prompt "Fuzzy grep" dir))
                (default-directory dir))
     (consult--read
-     (thread-first (consult--async-sink)
-       (consult--async-refresh-timer 0.05)
-       (consult--grep-format nil)
-       (affe--async
-        (affe--command affe-grep-command paths)
-        "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'")
-       (consult--async-split #'consult--split-nil))
+     (consult--async-pipeline
+      (consult--async-split 'none)
+      (consult--async-refresh 0.05)
+      (affe--async (affe--command affe-grep-command paths)
+                   "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'")
+      (consult--grep-format #'ignore))
+     :async-wrap #'identity
      :prompt prompt
      :sort nil
      :require-match t
@@ -202,11 +202,12 @@ REGEXP is the regexp which restricts the substring to match against."
   (pcase-let* ((`(,prompt ,paths ,dir) (consult--directory-prompt "Fuzzy find" dir))
                (default-directory dir))
     (consult--read
-     (thread-first (consult--async-sink)
-       (consult--async-refresh-timer 0.05)
-       (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
-       (affe--async (affe--command affe-find-command paths))
-       (consult--async-split #'consult--split-nil))
+     (consult--async-pipeline
+      (consult--async-split 'none)
+      (consult--async-refresh 0.05)
+      (affe--async (affe--command affe-find-command paths))
+      (consult--async-map (lambda (x) (string-remove-prefix "./" x))))
+     :async-wrap #'identity
      :prompt prompt
      :sort nil
      :require-match t
