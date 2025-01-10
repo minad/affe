@@ -179,10 +179,10 @@ REGEXP is the regexp which restricts the substring to match against."
     (consult--read
      (consult--async-pipeline
       (consult--async-split 'none)
-      (consult--async-refresh 0.05)
       (affe--async (affe--command affe-grep-command paths)
                    "\\`[^\0]+\0[^\0:]+[\0:]\\(.*\\)\\'")
-      (consult--grep-format #'ignore))
+      (consult--grep-format #'ignore)
+      (consult--async-refresh 0.05))
      :async-wrap #'identity
      :prompt prompt
      :sort nil
@@ -204,9 +204,9 @@ REGEXP is the regexp which restricts the substring to match against."
     (consult--read
      (consult--async-pipeline
       (consult--async-split 'none)
-      (consult--async-refresh 0.05)
       (affe--async (affe--command affe-find-command paths))
-      (consult--async-map (lambda (x) (string-remove-prefix "./" x))))
+      (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
+      (consult--async-refresh 0.05))
      :async-wrap #'identity
      :prompt prompt
      :sort nil
