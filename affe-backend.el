@@ -1,6 +1,6 @@
 ;;; affe-backend.el --- Affe backend -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2025 Daniel Mendler
+;; Copyright (C) 2021-2026 Daniel Mendler
 
 ;; This file is not part of GNU Emacs.
 
