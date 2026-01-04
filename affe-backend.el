@@ -168,7 +168,7 @@
 
 (defun affe-backend--append-producer ()
   "Append producer list to search list."
-  (when-let (head (cdr affe-backend--producer-head))
+  (when-let* ((head (cdr affe-backend--producer-head)))
     (setcdr affe-backend--search-tail head)
     (setq affe-backend--search-tail affe-backend--producer-tail
           affe-backend--producer-head (list nil)
@@ -177,7 +177,7 @@
 (defun affe-backend--search ()
   "Search and send matching lines to client."
   (affe-backend--search-status)
-  (when-let (head (cdr affe-backend--producer-head))
+  (when-let* ((head (cdr affe-backend--producer-head)))
     (affe-backend--append-producer)
     (catch 'affe-backend--search-done
       (let ((completion-regexp-list affe-backend--search-regexps)
